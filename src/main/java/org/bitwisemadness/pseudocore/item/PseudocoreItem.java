@@ -127,11 +127,12 @@ public class PseudocoreItem extends Item {
         // the permissive no-op limits, so nothing else changes behaviour.
         PseudocoreConfig.TierLimits limits = PseudocoreConfig.tierLimits(stack.getItem());
 
-        // Tamed-only (#111): the requirement comes before the permission
-        // axes - a tier that only takes tamed mobs never gets to argue about
-        // which tamed mobs it may take.
+        // Tamed-only (#111): requirement before permission axes. Its own key
+        // since #146 - this gate refuses the UNTAMED, so the shared message
+        // said the opposite; the allowTamedMobs gate below keeps that key.
         if (limits.tamedMobsOnly() && !isTamedOrOwned(target)) {
-            return refuse(player, Component.translatable("pseudocore.message.tamed"));
+            return refuse(player, Component.translatable("pseudocore.message.tamed_only",
+                    stack.getHoverName()));
         }
 
         if (!limits.allowTamedMobs() && isVanillaTamed(target)) {
@@ -345,12 +346,9 @@ public class PseudocoreItem extends Item {
                 && ModGameRules.isPseudocoreTransferEnabled(level)
                 && entity instanceof LivingEntity;
 
-        // Set before addFreshEntity so the spawn packet already carries it, and
-        // re-asserted below afterwards: TamableAnimal caches its owner in a
-        // field refreshed by reassignOwner(), and a pre-spawn setOwnerUUID
-        // cannot resolve the UUID to an online player yet. Doing both makes
-        // getControllingPassenger() (i.e. riding) work on the very tick the
-        // mob appears rather than one tick later.
+        // Set before addFreshEntity and re-asserted below: TamableAnimal
+        // caches its owner until reassignOwner(), and pre-spawn
+        // setOwnerUUID cannot resolve the player yet (spawn-tick riding).
         if (transfer) {
             transferOwnership((LivingEntity) entity, releaser);
         }

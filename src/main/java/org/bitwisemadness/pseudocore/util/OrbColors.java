@@ -8,7 +8,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.SpawnEggItem;
 import org.bitwisemadness.mobinfocommon.variant.VariantHelper;
-import org.bitwisemadness.pseudocore.Pseudocore;
 import org.bitwisemadness.pseudocore.config.PseudocoreConfig;
 import org.bitwisemadness.pseudocore.item.component.ContainedMobComponent;
 
@@ -100,10 +99,9 @@ public final class OrbColors {
     public static int orbColor(ContainedMobComponent comp) {
         ResourceLocation type = comp.entityType();
 
-        // Dragons: the stored NBT always carries Variant (#51's evidence), but
-        // the raw string-typed read (not VariantHelper#variantOf, which
-        // localizes) is what maps onto IaF's DragonColor names. A missing or
-        // non-string Variant simply falls through to the element colour.
+        // Dragons: the string-typed read (not VariantHelper#variantOf, which
+        // localizes) maps onto IaF's DragonColor names; a missing Variant
+        // simply falls through to the element colour.
         String dragonElement = DragonTints.elementOf(type.getPath());
         if (dragonElement != null) {
             return DragonTints.color(dragonElement,

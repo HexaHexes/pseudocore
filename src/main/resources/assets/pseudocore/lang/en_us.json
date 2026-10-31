@@ -24,6 +24,7 @@
   "pseudocore.message.already_full_generic": "This pseudocore already holds a creature.",
   "pseudocore.message.owned": "This creature is owned by another player.",
   "pseudocore.message.tamed": "This tier cannot capture tamed creatures.",
+  "pseudocore.message.tamed_only": "%s only captures tamed creatures.",
   "pseudocore.message.named": "This tier cannot capture named creatures.",
   "pseudocore.message.too_grown": "The %s has grown beyond this %s's capacity.",
   "pseudocore.message.wrong_element": "This %s only accepts %s dragons.",
