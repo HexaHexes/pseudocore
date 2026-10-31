@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suppressions PUBLIC "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN" "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<!-- Grandfathered findings from the Checkstyle pull: burn-down only, never new code. -->
+<suppressions>
+    <suppress checks="RegexpMultiline" files="DragonLineGameTests.java" lines="450"/>
+    <suppress checks="RegexpMultiline" files="LightmansTradeGameTests.java" lines="47"/>
+    <suppress checks="RegexpMultiline" files="LightmansTradeGameTests.java" lines="95"/>
+    <suppress checks="RegexpMultiline" files="TierCaptureConfigGameTests.java" lines="260"/>
+    <suppress checks="RegexpMultiline" files="TooltipGatingGameTests.java" lines="247"/>
+    <suppress checks="RegexpMultiline" files="PseudocoreClientEvents.java" lines="39"/>
+    <suppress checks="RegexpMultiline" files="PseudocoreTintHandler.java" lines="107"/>
+    <suppress checks="RegexpMultiline" files="PseudocoreTintHandler.java" lines="119"/>
+    <suppress checks="RegexpMultiline" files="PseudocoreConfig.java" lines="365"/>
+    <suppress checks="RegexpMultiline" files="PseudocoreConfig.java" lines="378"/>
+    <suppress checks="RegexpMultiline" files="PseudocoreEvents.java" lines="59"/>
+    <suppress checks="RegexpMultiline" files="DragonPseudocoreItem.java" lines="55"/>
+    <suppress checks="RegexpMultiline" files="DragonPseudocoreItem.java" lines="66"/>
+    <suppress checks="RegexpMultiline" files="PseudocoreItem.java" lines="85"/>
+    <suppress checks="RegexpMultiline" files="PseudocoreItem.java" lines="116"/>
+    <suppress checks="RegexpMultiline" files="PseudocoreItem.java" lines="348"/>
+    <suppress checks="RegexpMultiline" files="DragonHornItemMixin.java" lines="107"/>
+    <suppress checks="RegexpMultiline" files="DragonHornItemMixin.java" lines="134"/>
+    <suppress checks="RegexpMultiline" files="DragonHornItemMixin.java" lines="204"/>
+    <suppress checks="RegexpMultiline" files="IafMixinPlugin.java" lines="47"/>
+    <suppress checks="RegexpMultiline" files="ItemStackRarityMixin.java" lines="43"/>
+    <suppress checks="RegexpMultiline" files="OrbColors.java" lines="103"/>
+    <suppress checks="RegexpMultiline" files="TooltipHelper.java" lines="74"/>
+    <suppress checks="RegexpMultiline" files="TooltipHelper.java" lines="98"/>
+    <suppress checks="RegexpMultiline" files="TooltipHelper.java" lines="170"/>
+    <suppress checks="RegexpMultiline" files="TooltipHelper.java" lines="203"/>
+</suppressions>

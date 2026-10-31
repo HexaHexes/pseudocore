@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'checkstyle'
     id 'maven-publish'
     id 'net.neoforged.moddev' version '2.0.141'
     id 'idea'
@@ -319,6 +320,27 @@ spotbugsMain {
     reports {
         html.required = true
         xml.required = false
+    }
+}
+
+checkstyle {
+    toolVersion = '10.21.0'
+    configFile = file('config/checkstyle/checkstyle.xml')
+    maxWarnings = 0
+}
+
+// checkstyle 10.21.0 pins guava 33.3.1-jre, which dependency-review flags
+// as introduced by every PR (GHSA-xxph-c9ww-hj94, high, patched 33.7.2).
+// Force the patched line on the tool classpath only - checkstyle runs at
+// build time, never ships in the mod jar, and 33.x is backwards compatible.
+configurations.named('checkstyle') {
+    resolutionStrategy.force 'com.google.guava:guava:33.7.2-jre'
+}
+
+tasks.withType(Checkstyle).configureEach {
+    reports {
+        html.required = true
+        xml.required = true
     }
 }
 
