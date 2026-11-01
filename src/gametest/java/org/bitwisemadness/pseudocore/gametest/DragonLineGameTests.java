@@ -539,12 +539,21 @@ public final class DragonLineGameTests {
         }
         boolean tensura = ModList.get().isLoaded("tensura") && PseudocoreConfig.tensuraIntegrationEnabled();
         RecipeManager recipes = helper.getLevel().getServer().getRecipeManager();
+        // GameTestServer force-enables every pack (#154's stubs are live
+        // here): the dragonsteel pack disables both variants outright.
+        boolean stubbed = helper.getLevel().getServer().getPackRepository().getSelectedIds().stream()
+                .anyMatch(id -> id.contains("optional_packs/"));
 
         for (String element : List.of("fire", "ice", "lightning")) {
             ResourceLocation crystalId = ResourceLocation.fromNamespaceAndPath(
                     Pseudocore.MOD_ID, element + "_dragonsteel_pseudocore");
             ResourceLocation gemId = ResourceLocation.fromNamespaceAndPath(
                     Pseudocore.MOD_ID, element + "_dragonsteel_pseudocore_gem");
+            if (stubbed) {
+                check(!recipes.byKey(crystalId).isPresent() && !recipes.byKey(gemId).isPresent(),
+                        "with the optional packs on, " + crystalId + " must be disabled by its stub (#154)");
+                continue;
+            }
             check(recipes.byKey(crystalId).isPresent() == tensura,
                     "the crystal variant of " + crystalId + " must load exactly when Tensura's"
                             + " integration is active");

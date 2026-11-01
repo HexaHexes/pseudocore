@@ -26,6 +26,7 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import org.bitwisemadness.pseudocore.Pseudocore;
 import org.bitwisemadness.pseudocore.config.PseudocoreConfig;
+import org.bitwisemadness.pseudocore.data.PseudocoreRecipeProvider;
 import org.bitwisemadness.pseudocore.item.component.ContainedMobComponent;
 import org.bitwisemadness.pseudocore.registry.ModDataComponents;
 import org.bitwisemadness.pseudocore.registry.ModItems;
@@ -64,10 +65,24 @@ public final class BaseRecipeGameTests {
         Level level = helper.getLevel();
         boolean tensura = ModList.get().isLoaded("tensura") && PseudocoreConfig.tensuraIntegrationEnabled();
         RecipeManager recipes = level.getServer().getRecipeManager();
+        // GameTestServer enables every available pack (vanilla quirk), so the
+        // #154 stubs are live here: stubbed tiers show NEITHER variant. Real
+        // servers default the packs opt-in, and the logic below runs there.
+        boolean optionalPacksOn = level.getServer().getPackRepository().getSelectedIds().stream()
+                .anyMatch(id -> id.contains("optional_packs/"));
 
         for (Tier tier : registeredTiers()) {
             ResourceLocation crystalId = recipeId(tier.name(), "");
             ResourceLocation gemId = recipeId(tier.name(), "_gem");
+
+            boolean stubbed = optionalPacksOn && PseudocoreRecipeProvider.optionalPackBands().stream()
+                    .anyMatch(band -> band.contains(crystalId.getPath()));
+            if (stubbed) {
+                check(!recipes.byKey(crystalId).isPresent() && !recipes.byKey(gemId).isPresent(),
+                        "with the optional packs on, both variants of " + crystalId
+                                + " must be disabled by their stubs (#154)");
+                continue;
+            }
 
             check(recipes.byKey(crystalId).isPresent() == tensura,
                     "the magic-crystal recipe " + crystalId + " must be loaded exactly when Tensura's"

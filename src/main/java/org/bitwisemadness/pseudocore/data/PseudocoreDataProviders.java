@@ -1,8 +1,14 @@
 package org.bitwisemadness.pseudocore.data;
 
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.PackSource;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
+import net.neoforged.neoforge.event.AddPackFindersEvent;
 import org.bitwisemadness.pseudocore.Pseudocore;
 
 /**
@@ -33,5 +39,30 @@ public final class PseudocoreDataProviders {
         generator.addProvider(true,
                 new PseudocoreItemTagsProvider(generator.getPackOutput(), event.getLookupProvider(),
                         event.getExistingFileHelper()));
+        generator.addProvider(true,
+                new PseudocoreOptionalPacksProvider(generator.getPackOutput()));
+    }
+
+    /**
+     * The three optional upgrade-progression packs (#154), registered
+     * from their generated folder in the jar: default-off, toggleable
+     * per world, TOP-positioned so an enabled pack's stubs override the
+     * real recipes.
+     */
+    @SubscribeEvent
+    public static void onAddPackFinders(AddPackFindersEvent event) {
+        if (event.getPackType() != PackType.SERVER_DATA) {
+            return;
+        }
+        for (PseudocoreOptionalPacksProvider.PackSpec pack : PseudocoreOptionalPacksProvider.PACKS) {
+            event.addPackFinders(
+                    ResourceLocation.fromNamespaceAndPath(Pseudocore.MOD_ID,
+                            "optional_packs/" + pack.path()),
+                    PackType.SERVER_DATA,
+                    Component.literal(pack.display()),
+                    PackSource.FEATURE,
+                    false,
+                    Pack.Position.TOP);
+        }
     }
 }
