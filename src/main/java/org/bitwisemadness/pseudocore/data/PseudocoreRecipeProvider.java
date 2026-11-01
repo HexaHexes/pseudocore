@@ -289,6 +289,54 @@ public final class PseudocoreRecipeProvider extends RecipeProvider {
                 row.conditions().toArray(ICondition[]::new));
     }
 
+    /**
+     * The three optional-pack bands (#154): the directly-craftable core
+     * recipe ids each pack disables. Derived from the row tables, so a
+     * tier renamed or added here can never drift from the packs; a band
+     * name without matching rows fails datagen loudly. Public so the
+     * recipe gametests can adapt to the packs' state (GameTestServer
+     * force-enables every available pack).
+     */
+    public static java.util.List<java.util.Set<String>> optionalPackBands() {
+        java.util.Set<String> all = new java.util.LinkedHashSet<>();
+        for (CrystalRow row : BEAST_CRYSTAL) {
+            all.add(row.name());
+            all.add(row.name() + "_gem");
+        }
+        for (String element : DRAGONSTEEL_ELEMENTS) {
+            all.add(element + "_dragonsteel_pseudocore");
+            all.add(element + "_dragonsteel_pseudocore_gem");
+        }
+        java.util.Set<String> band1 = bandOf(all,
+                "iron_pseudocore", "silver_pseudocore", "gold_pseudocore", "netherite_pseudocore");
+        java.util.Set<String> band2 = bandOf(all,
+                "high_magisteel_pseudocore", "pure_magisteel_pseudocore", "mithril_pseudocore",
+                "orichalcum_pseudocore", "adamantite_pseudocore", "hihiirokane_pseudocore");
+        java.util.Set<String> band3 = new java.util.LinkedHashSet<>();
+        for (String element : DRAGONSTEEL_ELEMENTS) {
+            String name = element + "_dragonsteel_pseudocore";
+            if (!all.contains(name) || !all.contains(name + "_gem")) {
+                throw new IllegalStateException("Missing dragonsteel rows for band 3: " + name);
+            }
+            band3.add(name);
+            band3.add(name + "_gem");
+        }
+        return java.util.List.of(band1, band2, band3);
+    }
+
+    /** Both variants (crystal and gem) of each named tier, rows-verified. */
+    private static java.util.Set<String> bandOf(java.util.Set<String> all, String... names) {
+        java.util.Set<String> band = new java.util.LinkedHashSet<>();
+        for (String name : names) {
+            if (!all.contains(name) || !all.contains(name + "_gem")) {
+                throw new IllegalStateException("Optional-pack band names a tier with no rows: " + name);
+            }
+            band.add(name);
+            band.add(name + "_gem");
+        }
+        return band;
+    }
+
     /** {@code tag:...} or {@code item:...} ref to its ingredient. */
     private static Ingredient ingredient(String ref) {
         if (ref.startsWith("tag:")) {
