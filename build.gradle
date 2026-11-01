@@ -188,6 +188,18 @@ dependencies {
     compileOnly 'curse.maven:uranus-1010827:8587525' // uranus-2.4.1-bugfix
 
     // -------------------------------------------------------------------------
+    // Gear Evolution: optional. The element trait (#153, addon #60) is written
+    // through GE's public GearTraitStorage statics, so compileOnly for the
+    // bridge; localRuntime carries GE plus its pack closure (curios,
+    // cloth-config) in the gameTestServer for the trait round-trip test -
+    // the same mod set the Curios addon already runs headless.
+    // -------------------------------------------------------------------------
+    compileOnly "curse.maven:gearevolution-1501711:9122235"
+    localRuntime "curse.maven:gearevolution-1501711:9122235"
+    localRuntime "curse.maven:curios-309927:6529130"
+    localRuntime "curse.maven:cloth-config-348521:5729127"
+
+    // -------------------------------------------------------------------------
     // Mobs of Mythology + Mysticism are no longer compiled against here at all:
     // their variant names moved into the shared mob-info library, which owns
     // both access classes and gates them itself.

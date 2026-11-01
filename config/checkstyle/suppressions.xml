@@ -2,7 +2,7 @@
 <!DOCTYPE suppressions PUBLIC "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN" "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 <!-- Grandfathered findings from the Checkstyle pull: burn-down only, never new code. -->
 <suppressions>
-    <suppress checks="RegexpMultiline" files="DragonLineGameTests.java" lines="461"/>
+    <suppress checks="RegexpMultiline" files="DragonLineGameTests.java" lines="462"/>
     <suppress checks="RegexpMultiline" files="LightmansTradeGameTests.java" lines="47"/>
     <suppress checks="RegexpMultiline" files="LightmansTradeGameTests.java" lines="95"/>
     <suppress checks="RegexpMultiline" files="TierCaptureConfigGameTests.java" lines="260"/>
@@ -13,8 +13,8 @@
     <suppress checks="RegexpMultiline" files="PseudocoreConfig.java" lines="366"/>
     <suppress checks="RegexpMultiline" files="PseudocoreConfig.java" lines="379"/>
     <suppress checks="RegexpMultiline" files="PseudocoreEvents.java" lines="59"/>
-    <suppress checks="RegexpMultiline" files="DragonPseudocoreItem.java" lines="55"/>
-    <suppress checks="RegexpMultiline" files="DragonPseudocoreItem.java" lines="66"/>
+    <suppress checks="RegexpMultiline" files="DragonPseudocoreItem.java" lines="56"/>
+    <suppress checks="RegexpMultiline" files="DragonPseudocoreItem.java" lines="67"/>
     <suppress checks="RegexpMultiline" files="PseudocoreItem.java" lines="85"/>
     <suppress checks="RegexpMultiline" files="PseudocoreItem.java" lines="116"/>
     <suppress checks="RegexpMultiline" files="PseudocoreItem.java" lines="348"/>

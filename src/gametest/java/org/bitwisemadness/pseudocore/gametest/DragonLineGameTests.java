@@ -44,6 +44,7 @@ import org.bitwisemadness.pseudocore.config.PseudocoreConfig;
 import org.bitwisemadness.pseudocore.item.DragonPseudocoreItem;
 import org.bitwisemadness.pseudocore.registry.ModDataComponents;
 import org.bitwisemadness.pseudocore.registry.ModItems;
+import org.bitwisemadness.pseudocore.util.GearEvolutionBridge;
 import org.bitwisemadness.pseudocore.util.IafHornAccess;
 import org.bitwisemadness.pseudocore.util.TooltipHelper;
 
@@ -635,6 +636,36 @@ public final class DragonLineGameTests {
         } finally {
             section.tamedDragonsOnly.set(true);
         }
+
+        helper.succeed();
+    }
+
+    /**
+     * The element-trait lifecycle (#153): the bridge writes, overwrites
+     * and clears GE's tool specialization - the binding the branch
+     * evolution reads (addon #60). The capture stamping itself cannot be
+     * driven in this harness (IaF's ownership guard declines mock
+     * holders, #43), so the bridge endpoints are pinned directly, with
+     * GE's presence asserted rather than assumed.
+     */
+    @GameTest(template = "test_area")
+    public static void elementTraitLifecycleFollowsTheBridge(GameTestHelper helper) {
+        check(ModList.get().isLoaded("gearevolution"),
+                "Gear Evolution must be staged for the trait lifecycle test (#153)");
+        ItemStack core = new ItemStack(ModItems.DRAGON_TIERS.get(4).get());
+        check(GearEvolutionBridge.getSpecialization(core).isEmpty(),
+                "a fresh core carries no element");
+
+        GearEvolutionBridge.setSpecialization(core, "ice");
+        check("ice".equals(GearEvolutionBridge.getSpecialization(core)),
+                "capture must stamp the dragon's element (#153)");
+        GearEvolutionBridge.setSpecialization(core, "fire");
+        check("fire".equals(GearEvolutionBridge.getSpecialization(core)),
+                "every capture overwrites - the core tracks its current dragon (#153)");
+
+        GearEvolutionBridge.clearSpecialization(core);
+        check(GearEvolutionBridge.getSpecialization(core).isEmpty(),
+                "the clear gesture's wipe must clear the element (#153)");
 
         helper.succeed();
     }

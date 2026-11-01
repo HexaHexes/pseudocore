@@ -11,6 +11,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import org.bitwisemadness.pseudocore.config.PseudocoreConfig;
+import org.bitwisemadness.pseudocore.util.GearEvolutionBridge;
 import org.bitwisemadness.pseudocore.util.IafHornAccess;
 import org.bitwisemadness.pseudocore.util.TensuraBridge;
 
@@ -105,7 +106,14 @@ public class DragonPseudocoreItem extends DragonHornItem {
                     target.getType().getDescription(), stack.getHoverName()));
         }
 
-        return super.interactLivingEntity(stack, player, target, hand);
+        InteractionResult result = super.interactLivingEntity(stack, player, target, hand);
+        if (result == InteractionResult.SUCCESS) {
+            // Element trait (#153): capture stamps the dragon's element onto
+            // GE's specialization for the branch evolution (addon #60); every
+            // capture overwrites - the core tracks its CURRENT dragon.
+            GearEvolutionBridge.setSpecialization(stack, dragon.dragonType.name());
+        }
+        return result;
     }
 
     /**
