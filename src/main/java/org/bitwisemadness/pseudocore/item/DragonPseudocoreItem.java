@@ -76,6 +76,13 @@ public class DragonPseudocoreItem extends DragonHornItem {
                     stack.getHoverName(), display));
         }
 
+        // Wild-dragon axis (#150), requirement before permission like the
+        // beast line (#111): metal refuses wild dragons by default, the
+        // dragonsteel line hunts them. Wild = IaF's flag unset, no owner.
+        if (limits.tamedDragonsOnly() && !isTamedOrOwned(dragon)) {
+            return refuse(player, Component.translatable("pseudocore.message.wild_dragon",
+                    stack.getHoverName()));
+        }
         if (!limits.allowTamedMobs() && dragon.isTame()) {
             return refuse(player, Component.translatable("pseudocore.message.tamed"));
         }
@@ -99,6 +106,16 @@ public class DragonPseudocoreItem extends DragonHornItem {
         }
 
         return super.interactLivingEntity(stack, player, target, hand);
+    }
+
+    /**
+     * Tamed or owned in the two layers the dragon capture path recognizes
+     * (#150): IaF's own tame flag and Tensura's ownership table. Wild = the
+     * dragon has neither; anti-theft (WHOM it belongs to) stays elsewhere.
+     */
+    private static boolean isTamedOrOwned(DragonBaseEntity dragon) {
+        return dragon.isTame()
+                || (TensuraBridge.isLoaded() && TensuraBridge.readOwner(dragon).isPresent());
     }
 
     /**

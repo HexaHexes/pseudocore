@@ -85,24 +85,25 @@ public final class PseudocoreConfig {
      * {@code any}.</p>
      */
     private record DragonTier(String key, int defaultMaxStage, double defaultMaxEP,
-                              String defaultRequiredElement) {
+                              String defaultRequiredElement, boolean defaultTamedDragonsOnly) {
     }
 
     /**
      * The dragon tiers, in ascending order: the five metal tiers, then the
      * three dragonsteel tiers (#112). Stage defaults follow the tier ladder
      * for the metals: copper 1 through netherite 5; dragonsteel is uncapped.
-     * EP defaults are per-tier - see {@link DragonTier}.
+     * EP defaults are per-tier - see {@link DragonTier}. The metal line is
+     * tamed-only by default, dragonsteel hunts wild dragons (#150).
      */
     private static final List<DragonTier> DRAGON_TIERS = List.of(
-            new DragonTier("copper", 1, 150_000, "any"),
-            new DragonTier("iron", 2, 300_000, "any"),
-            new DragonTier("silver", 3, 525_000, "any"),
-            new DragonTier("gold", 4, 825_000, "any"),
-            new DragonTier("netherite", 5, 0, "any"),
-            new DragonTier("fire_dragonsteel", 0, 0.0, "fire"),
-            new DragonTier("ice_dragonsteel", 0, 0.0, "ice"),
-            new DragonTier("lightning_dragonsteel", 0, 0.0, "lightning"));
+            new DragonTier("copper", 1, 150_000, "any", true),
+            new DragonTier("iron", 2, 300_000, "any", true),
+            new DragonTier("silver", 3, 525_000, "any", true),
+            new DragonTier("gold", 4, 825_000, "any", true),
+            new DragonTier("netherite", 5, 0, "any", true),
+            new DragonTier("fire_dragonsteel", 0, 0.0, "fire", false),
+            new DragonTier("ice_dragonsteel", 0, 0.0, "ice", false),
+            new DragonTier("lightning_dragonsteel", 0, 0.0, "lightning", false));
 
     /** The tier keys, derived once for the item-to-tier lookup. */
     private static final Set<String> TIER_KEYS =
@@ -518,6 +519,13 @@ public final class PseudocoreConfig {
                                 "Whether vanilla-tamed dragons may be captured by this tier. The",
                                 "anti-theft rule - only dragons you own - is separate and always applies.")
                         .define("allowTamedMobs", true);
+                ModConfigSpec.BooleanValue tamedOnly = builder
+                        .comment(
+                                "Whether this tier may ONLY capture tamed/owned dragons (#150).",
+                                "Wild = IaF's tame flag unset and no Tensura owner recorded. The",
+                                "metal line defaults to true; dragonsteel defaults to false -",
+                                "the tier that hunts wild dragons.")
+                        .define("tamedDragonsOnly", tier.defaultTamedDragonsOnly());
                 ModConfigSpec.BooleanValue named = builder
                         .comment(
                                 "Whether dragons Tensura's naming system has named may be",
@@ -537,7 +545,7 @@ public final class PseudocoreConfig {
                         .define("requiredElement", tier.defaultRequiredElement());
                 builder.pop();
                 dragonSections.put(tier.key(),
-                        new DragonTierSection(maxEP, tamed, named, maxStage, requiredElement));
+                        new DragonTierSection(maxEP, tamed, tamedOnly, named, maxStage, requiredElement));
             }
             builder.pop();
             dragonTiers = Collections.unmodifiableMap(dragonSections);
@@ -589,8 +597,8 @@ public final class PseudocoreConfig {
             DragonTierSection section = dragonTiers.get(key);
             return section == null ? DragonTierLimits.PERMISSIVE
                     : new DragonTierLimits(section.maxEP.get(), section.allowTamedMobs.get(),
-                            section.allowTensuraNamed.get(), section.maxStage.get(),
-                            section.requiredElement.get());
+                            section.tamedDragonsOnly.get(), section.allowTensuraNamed.get(),
+                            section.maxStage.get(), section.requiredElement.get());
         }
     }
 
@@ -651,18 +659,21 @@ public final class PseudocoreConfig {
 
     /** The capture limits one dragon tier enforces, resolved at read time. */
     public static final class DragonTierLimits {
-        static final DragonTierLimits PERMISSIVE = new DragonTierLimits(0.0D, true, true, 0, "");
+        static final DragonTierLimits PERMISSIVE =
+                new DragonTierLimits(0.0D, true, false, true, 0, "");
 
         private final double maxEP;
         private final boolean allowTamedMobs;
+        private final boolean tamedDragonsOnly;
         private final boolean allowTensuraNamed;
         private final int maxStage;
         private final String requiredElement;
 
-        DragonTierLimits(double maxEP, boolean allowTamedMobs, boolean allowTensuraNamed,
-                         int maxStage, String requiredElement) {
+        DragonTierLimits(double maxEP, boolean allowTamedMobs, boolean tamedDragonsOnly,
+                         boolean allowTensuraNamed, int maxStage, String requiredElement) {
             this.maxEP = maxEP;
             this.allowTamedMobs = allowTamedMobs;
+            this.tamedDragonsOnly = tamedDragonsOnly;
             this.allowTensuraNamed = allowTensuraNamed;
             this.maxStage = maxStage;
             this.requiredElement = requiredElement;
@@ -675,6 +686,11 @@ public final class PseudocoreConfig {
 
         public boolean allowTamedMobs() {
             return allowTamedMobs;
+        }
+
+        /** May this tier capture ONLY tamed/owned dragons (#150)? */
+        public boolean tamedDragonsOnly() {
+            return tamedDragonsOnly;
         }
 
         public boolean allowTensuraNamed() {
@@ -695,19 +711,22 @@ public final class PseudocoreConfig {
         }
     }
 
-    /** The five live config values of one dragon tier's section. */
+    /** The live config values of one dragon tier's section. */
     public static final class DragonTierSection {
         public final ModConfigSpec.DoubleValue maxEP;
         public final ModConfigSpec.BooleanValue allowTamedMobs;
+        public final ModConfigSpec.BooleanValue tamedDragonsOnly;
         public final ModConfigSpec.BooleanValue allowTensuraNamed;
         public final ModConfigSpec.IntValue maxStage;
         public final ModConfigSpec.ConfigValue<String> requiredElement;
 
         DragonTierSection(ModConfigSpec.DoubleValue maxEP, ModConfigSpec.BooleanValue allowTamedMobs,
+                          ModConfigSpec.BooleanValue tamedDragonsOnly,
                           ModConfigSpec.BooleanValue allowTensuraNamed, ModConfigSpec.IntValue maxStage,
                           ModConfigSpec.ConfigValue<String> requiredElement) {
             this.maxEP = maxEP;
             this.allowTamedMobs = allowTamedMobs;
+            this.tamedDragonsOnly = tamedDragonsOnly;
             this.allowTensuraNamed = allowTensuraNamed;
             this.maxStage = maxStage;
             this.requiredElement = requiredElement;
