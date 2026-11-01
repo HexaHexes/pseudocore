@@ -150,11 +150,13 @@ public final class DragonLineGameTests {
                             + " (1.5x its stage's end-of-row EP, 0 for the uncapped netherite tier), got "
                             + section.maxEP.get());
             check(section.allowTamedMobs.get(), key + " must default to allowing tamed dragons");
+            check(section.tamedDragonsOnly.get(),
+                    key + " must default tamed-only - no wild dragons on the metal line (#150)");
             check(section.allowTensuraNamed.get(), key + " must default to allowing named dragons");
 
             PseudocoreConfig.DragonTierLimits limits = PseudocoreConfig.COMMON.dragonTierLimits(key);
             check(limits.maxStage() == STAGE_LADDER[i] && limits.maxEP() == expectedMaxEP
-                    && limits.allowTamedMobs() && limits.allowTensuraNamed(),
+                    && limits.allowTamedMobs() && limits.tamedDragonsOnly() && limits.allowTensuraNamed(),
                     "the resolved limits for " + key + " must match the section's defaults");
         }
 
@@ -180,10 +182,13 @@ public final class DragonLineGameTests {
                             + section.requiredElement.get());
             check(section.allowTamedMobs.get() && section.allowTensuraNamed.get(),
                     entry[0] + " must default permissive on the other axes");
+            check(!section.tamedDragonsOnly.get(),
+                    entry[0] + " must default OPEN to wild dragons - the dragonsteel line hunts them (#150)");
 
             PseudocoreConfig.DragonTierLimits limits =
                     PseudocoreConfig.COMMON.dragonTierLimits(entry[0]);
             check(limits.maxStage() == 0 && limits.maxEP() == 0.0D
+                            && !limits.tamedDragonsOnly()
                             && entry[1].equalsIgnoreCase(limits.requiredElement()),
                     entry[0] + "'s resolved limits must match its section");
         }
@@ -280,6 +285,9 @@ public final class DragonLineGameTests {
                 .get(ResourceLocation.fromNamespaceAndPath("iceandfire", "fire_dragon"));
         DragonBaseEntity dragon = helper.spawn(fireDragon, 1, 1, 1);
         dragon.setAgeInDays(75);
+        // Tamed (#150): the metal line now refuses WILD dragons by default,
+        // so the hand-off legs need a tamed dragon to reach IaF's guard at all.
+        dragon.tame(player);
 
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.DRAGON_TIERS.get(0).get()));
         var cappedEvent = new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, dragon);
@@ -434,6 +442,9 @@ public final class DragonLineGameTests {
                 .get(ResourceLocation.fromNamespaceAndPath("iceandfire", "fire_dragon"));
         DragonBaseEntity dragon = helper.spawn(fireDragon, 1, 1, 1);
         dragon.setAgeInDays(75);
+        // Tamed (#150): the metal line now refuses WILD dragons by default,
+        // so the uncapped hand-off leg needs a tamed dragon to reach IaF.
+        dragon.tame(player);
 
         // A beast core in the slot: the entry point ignores it outright.
         ItemStack beast = new ItemStack(ModItems.IRON_PSEUDOCORE.get());
@@ -576,6 +587,56 @@ public final class DragonLineGameTests {
         Matcher matcher = DIGITS.matcher(tooltip.get(1).getString());
         check(matcher.find(), "the stage line must carry a stage number: " + tooltip.get(1).getString());
         return Integer.parseInt(matcher.group());
+    }
+
+    /**
+     * The wild-dragon axis (#150): the metal line refuses a wild dragon by
+     * default (our gate, PASS, before IaF is asked), dragonsteel's default
+     * binding reaches IaF's ownership guard (CONSUME), and flipping the
+     * metal tier's {@code tamedDragonsOnly} opens it - the per-tier
+     * config, proven on a live value.
+     */
+    @GameTest(template = "test_area")
+    public static void wildDragonAxisGatesMetalAndDragonsteelLines(GameTestHelper helper) {
+        if (!ModItems.dragonTiersAvailable()) {
+            helper.succeed();
+            return;
+        }
+        var player = helper.makeMockPlayer(GameType.SURVIVAL);
+        @SuppressWarnings("unchecked")
+        var fireDragon = (net.minecraft.world.entity.EntityType<DragonBaseEntity>) BuiltInRegistries.ENTITY_TYPE
+                .get(ResourceLocation.fromNamespaceAndPath("iceandfire", "fire_dragon"));
+        DragonBaseEntity dragon = helper.spawn(fireDragon, 1, 1, 1);
+        check(!dragon.isTame(), "a freshly spawned dragon must read as wild");
+
+        // Metal line, default: tamed-only - our gate refuses before IaF.
+        ItemStack copper = new ItemStack(ModItems.DRAGON_TIERS.get(0).get());
+        check(IafHornAccess.tryCaptureDragon(player, dragon, copper) == InteractionResult.PASS,
+                "the copper dragon core must refuse a wild dragon by default (#150)");
+        check(IafHornAccess.read(copper) == null,
+                "a refused capture must not store the dragon");
+
+        // Dragonsteel, default: the axis is open - IaF's own guard answers.
+        ItemStack steel = new ItemStack(itemOrAir("pseudocore:fire_dragonsteel_pseudocore"));
+        check(steel.getItem() != Items.AIR, "the fire dragonsteel core must exist");
+        check(IafHornAccess.tryCaptureDragon(player, dragon, steel) == InteractionResult.CONSUME,
+                "the dragonsteel line must reach IaF's guard with a wild dragon - gate open (#150)");
+        check(IafHornAccess.read(steel) == null,
+                "a capture stopped by IaF's guard must not store the dragon");
+
+        // The axis is per-tier config: flipping copper's tamedDragonsOnly opens it.
+        var section = PseudocoreConfig.COMMON.dragonTier("copper").orElseThrow();
+        section.tamedDragonsOnly.set(false);
+        try {
+            check(IafHornAccess.tryCaptureDragon(player, dragon, copper) == InteractionResult.CONSUME,
+                    "with tamedDragonsOnly off, the copper dragon core must reach IaF's guard (#150)");
+            check(IafHornAccess.read(copper) == null,
+                    "IaF's decline must not store the dragon");
+        } finally {
+            section.tamedDragonsOnly.set(true);
+        }
+
+        helper.succeed();
     }
 
     private static ResourceLocation recipeId(String metal, String suffix) {

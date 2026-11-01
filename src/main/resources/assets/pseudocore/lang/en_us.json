@@ -25,6 +25,7 @@
   "pseudocore.message.owned": "This creature is owned by another player.",
   "pseudocore.message.tamed": "This tier cannot capture tamed creatures.",
   "pseudocore.message.tamed_only": "This %s cannot capture wild creatures.",
+  "pseudocore.message.wild_dragon": "This %s cannot capture wild dragons.",
   "pseudocore.message.named": "This tier cannot capture named creatures.",
   "pseudocore.message.too_grown": "The %s has grown beyond this %s's capacity.",
   "pseudocore.message.wrong_element": "This %s only accepts %s dragons.",
