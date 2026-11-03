@@ -89,6 +89,13 @@ jobs:
 
       - name: Build the jar
         if: steps.resolve.outputs.skip == 'false'
+        env:
+          # Step-scoped package read token: the library this repo resolves from
+          # GitHub Packages needs a read token, and a Gradle cache miss without
+          # it is a 401 - the v2.2.0 cut hit exactly that after the runner's
+          # cache expired (see issue #163). The workflow GITHUB_TOKEN cannot
+          # read a package owned by another repo, so this must be the PAT.
+          PACKAGE_READ_TOKEN: ${{ secrets.PACKAGE_READ_TOKEN }}
         run: ./gradlew build --no-daemon --stacktrace
 
       - name: Publish the release
