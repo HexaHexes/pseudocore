@@ -15,9 +15,10 @@ import org.bitwisemadness.pseudocore.util.IafHornAccess;
 
 /**
  * Client-only wiring. Registers the orb tint handler and the empty/filled
- * model predicate. The enchantment glint needs no client wiring at all: both
- * item classes override {@code Item#isFoil}, which is vanilla's own decision
- * point (#86).
+ * model predicate. The glint's client half is #160's shimmer mixin - the
+ * config's {@code client} array holds it - while the foil itself needs no
+ * wiring: vanilla's {@code Item#isFoil} answers for the enchantment alone
+ * now that the filled state has its own layer.
  *
  * <p>Split from the tint logic itself so no client-only class is ever loaded
  * on a dedicated server.</p>
