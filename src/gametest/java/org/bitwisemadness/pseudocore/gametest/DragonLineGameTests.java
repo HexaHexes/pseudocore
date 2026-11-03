@@ -260,9 +260,9 @@ public final class DragonLineGameTests {
 
         var cow = helper.spawn(net.minecraft.world.entity.EntityType.COW, 1, 1, 1);
         // The control probes the click WIRING with an untamed cow: the wild
-        // gate needs wild_capture on this leg's core (#159).
+        // gate needs hunters_boon on this leg's core (#159).
         ItemStack controlCore = new ItemStack(ModItems.IRON_PSEUDOCORE.get());
-        controlCore.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
+        controlCore.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
         player.setItemInHand(InteractionHand.MAIN_HAND, controlCore);
         var beastEvent = new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, cow);
         NeoForge.EVENT_BUS.post(beastEvent);
@@ -271,7 +271,7 @@ public final class DragonLineGameTests {
                 && player.getMainHandItem().has(ModDataComponents.CONTAINED_MOB.get());
         check(controlPassed,
                 "control failed: the beast line's click must capture the cow and cancel the event"
-                        + " (wild_capture on the control core)");
+                        + " (hunters_boon on the control core)");
 
         @SuppressWarnings("unchecked")
         var fireDragon = (net.minecraft.world.entity.EntityType<DragonBaseEntity>) BuiltInRegistries.ENTITY_TYPE
@@ -496,7 +496,7 @@ public final class DragonLineGameTests {
         ItemStack stack = new ItemStack(fireCore);
         // Isolate the element gate: the universal wild gate (#159) and the
         // capture cost must not be what refuses this pair.
-        stack.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
+        stack.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
         TensuraBridge.writePools(player, 1_000_000.0D, 1_000_000.0D);
         InteractionResult refused = IafHornAccess.tryCaptureDragon(player, dragon, stack);
         check(refused == InteractionResult.PASS,
@@ -597,7 +597,7 @@ public final class DragonLineGameTests {
 
     /**
      * The wild-dragon gate (#159): a bare core refuses a wild dragon
-     * before IaF is asked (PASS, our gate), and {@code wild_capture}
+     * before IaF is asked (PASS, our gate), and {@code hunters_boon}
      * opens it - after which IaF's own ownership guard still answers for
      * a mock holder (CONSUME), the documented boundary from #43. The
      * per-tier config axis that used to decide this is gone.
@@ -625,9 +625,9 @@ public final class DragonLineGameTests {
         // With the enchantment: our gate passes, IaF's guard answers.
         ItemStack steel = new ItemStack(itemOrAir("pseudocore:fire_dragonsteel_pseudocore"));
         check(steel.getItem() != Items.AIR, "the fire dragonsteel core must exist");
-        steel.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
+        steel.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
         check(IafHornAccess.tryCaptureDragon(player, dragon, steel) == InteractionResult.CONSUME,
-                "wild_capture must open the dragon gate - IaF's guard still answers (#159)");
+                "hunters_boon must open the dragon gate - IaF's guard still answers (#159)");
         check(IafHornAccess.read(steel) == null,
                 "a capture stopped by IaF's guard must not store the dragon");
 

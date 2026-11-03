@@ -34,9 +34,11 @@ import org.bitwisemadness.pseudocore.util.TensuraBridge;
 
 /**
  * The #159 capture economy, end to end: a wild mob is refused until the
- * core carries {@code wild_capture}, a capture charges its EP as MP
- * through the pool the enchantments move around, {@code cost_reduction}
- * discounts it, and release never touches the pool.
+ * core carries {@code hunters_boon}, a capture charges its EP across the
+ * pools the enchantments move around, {@code core_efficiency} discounts
+ * it, and release never touches the pool. #165's rotation sits in the
+ * middle of that: the default charge splits MP/AP evenly unless
+ * {@code warriors_aura} or {@code wizards_magicules} pins it to one.
  *
  * <p>Probes are chosen so only the gate under test can refuse: the wild
  * gate runs against a cow (not blacklisted, ownerless, wild), and the
@@ -73,16 +75,16 @@ public final class CaptureCostGameTests {
         var bareCow = helper.spawn(EntityType.COW, 1, 1, 1);
         ItemStack bare = uncappedCore();
         check(PseudocoreItem.tryCapture(player, bareCow, bare) == InteractionResult.PASS,
-                "a wild mob must be refused without the wild_capture enchantment");
+                "a wild mob must be refused without the hunters_boon enchantment");
         check(!bare.has(ModDataComponents.CONTAINED_MOB.get()),
                 "a refused capture stores nothing");
 
         var enchantedCow = helper.spawn(EntityType.COW, 2, 1, 2);
         ItemStack enchanted = uncappedCore();
-        enchanted.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
+        enchanted.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
         TensuraBridge.writePools(player, HUGE_POOL, HUGE_POOL);
         check(PseudocoreItem.tryCapture(player, enchantedCow, enchanted) == InteractionResult.SUCCESS,
-                "wild_capture must open the gate for a wild mob");
+                "hunters_boon must open the gate for a wild mob");
 
         helper.succeed();
     }
@@ -103,14 +105,18 @@ public final class CaptureCostGameTests {
             check(ep > 0.0D, "a Tensura mob must carry EP for the #159 economy, got " + ep);
 
             ItemStack core = uncappedCore();
-            core.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
-            core.enchant(holder(helper, ModEnchantments.COST_REDUCTION), 3); // 45% off
+            core.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
+            core.enchant(holder(helper, ModEnchantments.CORE_EFFICIENCY), 3); // 45% off
+            // #165's default splits the charge MP/AP, which would halve the
+            // pool read below - wizards_magicules pins it to MP so the
+            // measurement sees the whole discounted cost (and exercises it).
+            core.enchant(holder(helper, ModEnchantments.WIZARDS_MAGICULES), 1);
             TensuraBridge.writePools(player, HUGE_POOL, HUGE_POOL);
             check(PseudocoreItem.tryCapture(player, wild, core) == InteractionResult.SUCCESS,
                     "the enchantments must not change whether a wild mob is capturable");
             double charged = HUGE_POOL - TensuraBridge.readPools(player).orElseThrow()[1];
             check(Math.abs(charged - CaptureCostMath.epCost(ep, 3)) < 1e-6,
-                    "cost_reduction level 3 must take 45% off the charge, got " + charged
+                    "core_efficiency level 3 must take 45% off the charge, got " + charged
                             + " for EP " + ep);
         } finally {
             blacklist.set(original);
@@ -133,7 +139,7 @@ public final class CaptureCostGameTests {
             TensuraBridge.writePools(player, HUGE_POOL, HUGE_POOL);
             LivingEntity wild = ownedTensuraMob(helper, player, "tensura:goblin");
             ItemStack core = uncappedCore();
-            core.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
+            core.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
             check(PseudocoreItem.tryCapture(player, wild, core) == InteractionResult.SUCCESS,
                     "the capture must succeed for the release leg");
             double afterCapture = TensuraBridge.readPools(player).orElseThrow()[1];
@@ -146,6 +152,83 @@ public final class CaptureCostGameTests {
             double afterRelease = TensuraBridge.readPools(player).orElseThrow()[1];
             check(Math.abs(afterRelease - afterCapture) < 1e-6,
                     "release must be free - the pool must not move");
+        } finally {
+            blacklist.set(original);
+        }
+
+        helper.succeed();
+    }
+
+    /**
+     * #165's payment rotation: without an enchantment the charge splits
+     * evenly across both pools, warriors_aura takes it wholly to AP, and
+     * wizards_magicules wholly to MP. Each leg writes fresh huge pools,
+     * so the drains read back exactly.
+     */
+    @GameTest(template = "test_area")
+    public static void paymentRotationSplitsByDefaultAndEnchantsPinIt(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("tensura")) {
+            helper.succeed();
+            return;
+        }
+        var player = loggedInMockPlayer(helper);
+        var blacklist = PseudocoreConfig.COMMON.blacklistedEntities;
+        List<? extends String> original = blacklist.get();
+        blacklist.set(List.of());
+        try {
+            // The default: no payment enchantment - half from AP, half
+            // from MP (#165).
+            LivingEntity plain = ownedTensuraMob(helper, player, "tensura:goblin");
+            double plainEp = TensuraBridge.readEp(plain).orElse(0.0D);
+            check(plainEp > 0.0D,
+                    "a Tensura mob must carry EP for the #159 economy, got " + plainEp);
+            ItemStack plainCore = uncappedCore();
+            plainCore.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
+            TensuraBridge.writePools(player, HUGE_POOL, HUGE_POOL);
+            check(PseudocoreItem.tryCapture(player, plain, plainCore) == InteractionResult.SUCCESS,
+                    "the default split charge must succeed");
+            double[] afterPlain = TensuraBridge.readPools(player).orElseThrow();
+            double plainCost = CaptureCostMath.epCost(plainEp, 0);
+            check(Math.abs((HUGE_POOL - afterPlain[0]) - plainCost / 2.0D) < 1e-6,
+                    "the default must take half the cost from AP, got " + (HUGE_POOL - afterPlain[0])
+                            + " of " + plainCost);
+            check(Math.abs((HUGE_POOL - afterPlain[1]) - plainCost / 2.0D) < 1e-6,
+                    "the default must take half the cost from MP, got " + (HUGE_POOL - afterPlain[1])
+                            + " of " + plainCost);
+
+            // Warrior's Aura: the whole cost from AP, MP untouched.
+            LivingEntity auraMob = ownedTensuraMob(helper, player, "tensura:goblin");
+            double auraEp = TensuraBridge.readEp(auraMob).orElse(0.0D);
+            ItemStack auraCore = uncappedCore();
+            auraCore.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
+            auraCore.enchant(holder(helper, ModEnchantments.WARRIORS_AURA), 1);
+            TensuraBridge.writePools(player, HUGE_POOL, HUGE_POOL);
+            check(PseudocoreItem.tryCapture(player, auraMob, auraCore) == InteractionResult.SUCCESS,
+                    "the aura charge must succeed");
+            double[] afterAura = TensuraBridge.readPools(player).orElseThrow();
+            double auraCost = CaptureCostMath.epCost(auraEp, 0);
+            check(Math.abs((HUGE_POOL - afterAura[0]) - auraCost) < 1e-6,
+                    "warriors_aura must take the whole cost from AP, got "
+                            + (HUGE_POOL - afterAura[0]) + " of " + auraCost);
+            check(Math.abs(HUGE_POOL - afterAura[1]) < 1e-6,
+                    "warriors_aura must leave MP untouched, got " + afterAura[1]);
+
+            // Wizard's Magicules: the whole cost from MP, AP untouched.
+            LivingEntity magiculeMob = ownedTensuraMob(helper, player, "tensura:goblin");
+            double magiculeEp = TensuraBridge.readEp(magiculeMob).orElse(0.0D);
+            ItemStack magiculeCore = uncappedCore();
+            magiculeCore.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
+            magiculeCore.enchant(holder(helper, ModEnchantments.WIZARDS_MAGICULES), 1);
+            TensuraBridge.writePools(player, HUGE_POOL, HUGE_POOL);
+            check(PseudocoreItem.tryCapture(player, magiculeMob, magiculeCore)
+                    == InteractionResult.SUCCESS, "the magicule charge must succeed");
+            double[] afterMagicule = TensuraBridge.readPools(player).orElseThrow();
+            double magiculeCost = CaptureCostMath.epCost(magiculeEp, 0);
+            check(Math.abs((HUGE_POOL - afterMagicule[1]) - magiculeCost) < 1e-6,
+                    "wizards_magicules must take the whole cost from MP, got "
+                            + (HUGE_POOL - afterMagicule[1]) + " of " + magiculeCost);
+            check(Math.abs(HUGE_POOL - afterMagicule[0]) < 1e-6,
+                    "wizards_magicules must leave AP untouched, got " + afterMagicule[0]);
         } finally {
             blacklist.set(original);
         }

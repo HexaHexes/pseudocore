@@ -130,11 +130,11 @@ public class PseudocoreItem extends Item {
         // the permissive no-op limits, so nothing else changes behaviour.
         PseudocoreConfig.TierLimits limits = PseudocoreConfig.tierLimits(stack.getItem());
 
-        // Wild capture (#159): universal unless the core carries the
-        // wild_capture enchantment - the per-tier axis retired, the
+        // Hunter's Boon (#159): universal unless the core carries the
+        // hunters_boon enchantment - the per-tier axis retired, the
         // anti-theft rule below stays unconditional.
         if (!isTamedOrOwned(target)
-                && !ModEnchantments.has(player.level().registryAccess(), stack, ModEnchantments.WILD_CAPTURE)) {
+                && !ModEnchantments.has(player.level().registryAccess(), stack, ModEnchantments.HUNTERS_BOON)) {
             return refuse(player, Component.translatable("pseudocore.message.tamed_only",
                     stack.getHoverName()));
         }
@@ -160,7 +160,7 @@ public class PseudocoreItem extends Item {
         UUID uuid = target.getUUID();
 
         // The capture cost (#159): EP as MP with Tensura, XP points without,
-        // discounted by cost_reduction. Charged before anything is stored, so
+        // discounted by core_efficiency. Charged before anything is stored, so
         // a refusal stores nothing and takes nothing.
         if (player instanceof ServerPlayer serverPlayer) {
             var costRefusal = PseudocoreCosts.charge(serverPlayer, target, stack);

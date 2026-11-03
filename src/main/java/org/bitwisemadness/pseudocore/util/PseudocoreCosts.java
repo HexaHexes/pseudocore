@@ -1,6 +1,7 @@
 package org.bitwisemadness.pseudocore.util;
 
 import java.util.Optional;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -13,14 +14,15 @@ import org.bitwisemadness.pseudocore.registry.ModEnchantments;
  * into a core" verbs - capture, recall and death-preserve - with two
  * backends.
  *
- * <p>With Tensura installed the cost is the mob's <b>EP</b> charged as
- * <b>MP (magicule)</b>, optionally moved to <b>AP (aura)</b> or split
- * between the two by the {@code aura_payment} / {@code split_payment}
- * enchantments. Without it the cost is vanilla <b>XP points</b> at the
- * mob's {@code max HP x captureCost.xpPerMobHp}. {@code cost_reduction}
- * discounts either backend (15% per level, six levels = 90% off), so the
- * reduction enchantment works on any server while the pool pair stays
- * Tensura-only. Release and the clear gesture never call this class.</p>
+ * <p>With Tensura installed the cost is the mob's <b>EP</b>, split
+ * evenly between <b>MP (magicule)</b> and <b>AP (aura)</b> by default
+ * (#165), or moved wholly to one pool by the {@code warriors_aura} /
+ * {@code wizards_magicules} enchantments. Without it the cost is vanilla
+ * <b>XP points</b> at the mob's {@code max HP x captureCost.xpPerMobHp}.
+ * {@code core_efficiency} discounts either backend (15% per level, six
+ * levels = 90% off), so the reduction enchantment works on any server
+ * while the pool pair stays Tensura-only. Release and the clear gesture
+ * never call this class.</p>
  *
  * <p>Nothing here throws: an unreadable pool, a missing enchantment or a
  * mob without EP degrade to a zero cost rather than a refusal, because
@@ -68,7 +70,7 @@ public final class PseudocoreCosts {
      */
     public static Optional<Component> charge(ServerPlayer player, LivingEntity mob, ItemStack core) {
         var registries = player.level().registryAccess();
-        int reduction = ModEnchantments.levelOf(registries, core, ModEnchantments.COST_REDUCTION);
+        int reduction = ModEnchantments.levelOf(registries, core, ModEnchantments.CORE_EFFICIENCY);
         if (!TensuraBridge.isLoaded()) {
             return chargeXp(player, mob, reduction);
         }
@@ -88,7 +90,10 @@ public final class PseudocoreCosts {
         return Optional.empty();
     }
 
-    /** EP as MP, with the pool pair moving the charge to AP or half-half. */
+    /**
+     * EP as MP: half-half by default, wholly moved to one pool by the
+     * payment enchantments (#165).
+     */
     private static Optional<Component> chargeMp(ServerPlayer player, LivingEntity mob, ItemStack core,
                                                 int reduction) {
         double cost = epCost(TensuraBridge.readEp(mob).orElse(0.0D), reduction);
@@ -101,20 +106,37 @@ public final class PseudocoreCosts {
         }
         double aura = pools.get()[0];
         double magicule = pools.get()[1];
-        boolean auraOnly = ModEnchantments.has(player.level().registryAccess(), core,
-                ModEnchantments.AURA_PAYMENT);
-        boolean split = !auraOnly && ModEnchantments.has(player.level().registryAccess(), core,
-                ModEnchantments.SPLIT_PAYMENT);
-        double mp = auraOnly ? 0.0D : (split ? cost / 2.0D : cost);
-        double ap = auraOnly ? cost : (split ? cost / 2.0D : 0.0D);
-        if (magicule < mp) {
-            return Optional.of(Component.translatable("pseudocore.message.insufficient_mp", Math.ceil(mp)));
+        Shares shares = shares(player.level().registryAccess(), core, cost);
+        if (magicule < shares.mp()) {
+            return Optional.of(Component.translatable("pseudocore.message.insufficient_mp",
+                    Math.ceil(shares.mp())));
         }
-        if (aura < ap) {
-            return Optional.of(Component.translatable("pseudocore.message.insufficient_ap", Math.ceil(ap)));
+        if (aura < shares.ap()) {
+            return Optional.of(Component.translatable("pseudocore.message.insufficient_ap",
+                    Math.ceil(shares.ap())));
         }
-        TensuraBridge.writePools(player, aura - ap, magicule - mp);
+        TensuraBridge.writePools(player, aura - shares.ap(), magicule - shares.mp());
         return Optional.empty();
+    }
+
+    /** One cost's pool shares (#165): charge takes them, refund gives them back. */
+    private record Shares(double mp, double ap) {
+    }
+
+    /**
+     * How a cost splits across the pools for this core (#165):
+     * {@code warriors_aura} takes it all to AP, {@code wizards_magicules}
+     * all to MP, and without either the default splits it evenly - the
+     * aura enchantment wins if both sit on one core. Charge and refund
+     * both read it, so the two can never drift apart.
+     */
+    private static Shares shares(HolderLookup.Provider registries, ItemStack core, double cost) {
+        boolean auraOnly = ModEnchantments.has(registries, core, ModEnchantments.WARRIORS_AURA);
+        boolean magiculeOnly = !auraOnly
+                && ModEnchantments.has(registries, core, ModEnchantments.WIZARDS_MAGICULES);
+        double mp = auraOnly ? 0.0D : (magiculeOnly ? cost : cost / 2.0D);
+        double ap = auraOnly ? cost : (magiculeOnly ? 0.0D : cost / 2.0D);
+        return new Shares(mp, ap);
     }
 
     /**
@@ -125,7 +147,7 @@ public final class PseudocoreCosts {
      */
     public static void refund(ServerPlayer player, LivingEntity mob, ItemStack core) {
         var registries = player.level().registryAccess();
-        int reduction = ModEnchantments.levelOf(registries, core, ModEnchantments.COST_REDUCTION);
+        int reduction = ModEnchantments.levelOf(registries, core, ModEnchantments.CORE_EFFICIENCY);
         if (!TensuraBridge.isLoaded()) {
             long cost = xpCost(mob.getMaxHealth(), PseudocoreConfig.captureCostXpPerMobHp(), reduction);
             if (cost > 0L) {
@@ -138,10 +160,7 @@ public final class PseudocoreCosts {
             return;
         }
         double cost = epCost(TensuraBridge.readEp(mob).orElse(0.0D), reduction);
-        boolean auraOnly = ModEnchantments.has(registries, core, ModEnchantments.AURA_PAYMENT);
-        boolean split = !auraOnly && ModEnchantments.has(registries, core, ModEnchantments.SPLIT_PAYMENT);
-        double mp = auraOnly ? 0.0D : (split ? cost / 2.0D : cost);
-        double ap = auraOnly ? cost : (split ? cost / 2.0D : 0.0D);
-        TensuraBridge.writePools(player, pools.get()[0] + ap, pools.get()[1] + mp);
+        Shares shares = shares(registries, core, cost);
+        TensuraBridge.writePools(player, pools.get()[0] + shares.ap(), pools.get()[1] + shares.mp());
     }
 }
