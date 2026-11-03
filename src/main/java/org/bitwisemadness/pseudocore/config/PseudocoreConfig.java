@@ -46,18 +46,18 @@ public final class PseudocoreConfig {
      * anchors the values interpolate.</p>
      */
     private static final List<Tier> TIERS = List.of(
-            new Tier("copper", 1_500, true),
-            new Tier("iron", 7_500, true),
-            new Tier("silver", 15_000, true),
-            new Tier("gold", 37_500, true),
-            new Tier("netherite", 112_500, true),
-            new Tier("lowMagisteel", 150_000, false),
-            new Tier("highMagisteel", 225_000, false),
-            new Tier("pureMagisteel", 300_000, false),
-            new Tier("mithril", 450_000, false),
-            new Tier("orichalcum", 750_000, false),
-            new Tier("adamantite", 1_500_000, false),
-            new Tier("hihiirokane", 0, false));
+            new Tier("copper", 1_500),
+            new Tier("iron", 7_500),
+            new Tier("silver", 15_000),
+            new Tier("gold", 37_500),
+            new Tier("netherite", 112_500),
+            new Tier("lowMagisteel", 150_000),
+            new Tier("highMagisteel", 225_000),
+            new Tier("pureMagisteel", 300_000),
+            new Tier("mithril", 450_000),
+            new Tier("orichalcum", 750_000),
+            new Tier("adamantite", 1_500_000),
+            new Tier("hihiirokane", 0));
 
     /**
      * One tier's config key, default EP cap, and default tamed-only gate
@@ -68,7 +68,7 @@ public final class PseudocoreConfig {
      * off for the Tensura metals, which were not part of the request; the
      * per-tier config can flip either direction.</p>
      */
-    private record Tier(String key, double defaultMaxEP, boolean defaultTamedMobsOnly) {
+    private record Tier(String key, double defaultMaxEP) {
     }
 
     /**
@@ -85,25 +85,24 @@ public final class PseudocoreConfig {
      * {@code any}.</p>
      */
     private record DragonTier(String key, int defaultMaxStage, double defaultMaxEP,
-                              String defaultRequiredElement, boolean defaultTamedDragonsOnly) {
+                              String defaultRequiredElement) {
     }
 
     /**
      * The dragon tiers, in ascending order: the five metal tiers, then the
      * three dragonsteel tiers (#112). Stage defaults follow the tier ladder
      * for the metals: copper 1 through netherite 5; dragonsteel is uncapped.
-     * EP defaults are per-tier - see {@link DragonTier}. The metal line is
-     * tamed-only by default, dragonsteel hunts wild dragons (#150).
+     * EP defaults are per-tier - see {@link DragonTier}.
      */
     private static final List<DragonTier> DRAGON_TIERS = List.of(
-            new DragonTier("copper", 1, 150_000, "any", true),
-            new DragonTier("iron", 2, 300_000, "any", true),
-            new DragonTier("silver", 3, 525_000, "any", true),
-            new DragonTier("gold", 4, 825_000, "any", true),
-            new DragonTier("netherite", 5, 0, "any", true),
-            new DragonTier("fire_dragonsteel", 0, 0.0, "fire", false),
-            new DragonTier("ice_dragonsteel", 0, 0.0, "ice", false),
-            new DragonTier("lightning_dragonsteel", 0, 0.0, "lightning", false));
+            new DragonTier("copper", 1, 150_000, "any"),
+            new DragonTier("iron", 2, 300_000, "any"),
+            new DragonTier("silver", 3, 525_000, "any"),
+            new DragonTier("gold", 4, 825_000, "any"),
+            new DragonTier("netherite", 5, 0, "any"),
+            new DragonTier("fire_dragonsteel", 0, 0.0, "fire"),
+            new DragonTier("ice_dragonsteel", 0, 0.0, "ice"),
+            new DragonTier("lightning_dragonsteel", 0, 0.0, "lightning"));
 
     /** The tier keys, derived once for the item-to-tier lookup. */
     private static final Set<String> TIER_KEYS =
@@ -150,6 +149,20 @@ public final class PseudocoreConfig {
             return value.get();
         } catch (IllegalStateException notLoadedYet) {
             return true;
+        }
+    }
+
+    /**
+     * The XP fallback's per-HP multiplier (#159): without Tensura a
+     * capture, recall or death-preserve costs {@code (max HP x this)}
+     * whole experience points. Fail-open to the default like every other
+     * accessor, so a pre-load read never invents a cost.
+     */
+    public static int captureCostXpPerMobHp() {
+        try {
+            return COMMON.captureCostXpPerMobHp.get();
+        } catch (IllegalStateException notLoadedYet) {
+            return org.bitwisemadness.pseudocore.util.PseudocoreCosts.DEFAULT_XP_PER_MOB_HP;
         }
     }
 
@@ -337,6 +350,7 @@ public final class PseudocoreConfig {
 
         private final Map<String, TierSection> tiers;
         private final Map<String, DragonTierSection> dragonTiers;
+        private final ModConfigSpec.IntValue captureCostXpPerMobHp;
 
         public Common(ModConfigSpec.Builder builder) {
             builder.push("pseudocore");
@@ -483,21 +497,13 @@ public final class PseudocoreConfig {
                                 "Whether mobs tamed in the vanilla sense may be captured by this",
                                 "tier. The anti-theft rule is separate and always applies.")
                         .define("allowTamedMobs", true);
-                ModConfigSpec.BooleanValue tamedOnly = builder
-                        .comment(
-                                "Whether this tier only captures tamed or owned mobs: an untamed",
-                                "mob is refused outright. Defaults on for the vanilla-metal line",
-                                "copper through netherite (capture follows domestication there),",
-                                "off for the Tensura metals. The anti-theft rule - only mobs you",
-                                "own - is separate and always applies.")
-                        .define("tamedMobsOnly", tier.defaultTamedMobsOnly());
                 ModConfigSpec.BooleanValue named = builder
                         .comment(
                                 "Whether mobs that Tensura's naming system has named may be",
                                 "captured by this tier.")
                         .define("allowTensuraNamed", true);
                 builder.pop();
-                tierSections.put(tier.key(), new TierSection(maxEP, tamed, tamedOnly, named));
+                tierSections.put(tier.key(), new TierSection(maxEP, tamed, named));
             }
             builder.pop();
             tiers = Collections.unmodifiableMap(tierSections);
@@ -519,13 +525,6 @@ public final class PseudocoreConfig {
                                 "Whether vanilla-tamed dragons may be captured by this tier. The",
                                 "anti-theft rule - only dragons you own - is separate and always applies.")
                         .define("allowTamedMobs", true);
-                ModConfigSpec.BooleanValue tamedOnly = builder
-                        .comment(
-                                "Whether this tier may ONLY capture tamed/owned dragons (#150).",
-                                "Wild = IaF's tame flag unset and no Tensura owner recorded. The",
-                                "metal line defaults to true; dragonsteel defaults to false -",
-                                "the tier that hunts wild dragons.")
-                        .define("tamedDragonsOnly", tier.defaultTamedDragonsOnly());
                 ModConfigSpec.BooleanValue named = builder
                         .comment(
                                 "Whether dragons Tensura's naming system has named may be",
@@ -545,10 +544,21 @@ public final class PseudocoreConfig {
                         .define("requiredElement", tier.defaultRequiredElement());
                 builder.pop();
                 dragonSections.put(tier.key(),
-                        new DragonTierSection(maxEP, tamed, tamedOnly, named, maxStage, requiredElement));
+                        new DragonTierSection(maxEP, tamed, named, maxStage, requiredElement));
             }
             builder.pop();
             dragonTiers = Collections.unmodifiableMap(dragonSections);
+
+            builder.push("captureCost");
+            captureCostXpPerMobHp = builder
+                    .comment(
+                            "The XP-point cost per point of mob max HP for a capture, recall or",
+                            "death-preserve WITHOUT Tensura installed: mob max HP x this, in whole",
+                            "experience points (never levels). With Tensura the EP/MP economy",
+                            "replaces it entirely. The cost_reduction enchantment discounts either",
+                            "backend. #159.")
+                    .defineInRange("xpPerMobHp", 5, 0, Integer.MAX_VALUE);
+            builder.pop();
             builder.pop();
         }
 
@@ -578,7 +588,7 @@ public final class PseudocoreConfig {
             TierSection section = tiers.get(key);
             return section == null ? TierLimits.PERMISSIVE
                     : new TierLimits(section.maxEP.get(), section.allowTamedMobs.get(),
-                            section.tamedMobsOnly.get(), section.allowTensuraNamed.get());
+                            section.allowTensuraNamed.get());
         }
 
         /**
@@ -597,7 +607,7 @@ public final class PseudocoreConfig {
             DragonTierSection section = dragonTiers.get(key);
             return section == null ? DragonTierLimits.PERMISSIVE
                     : new DragonTierLimits(section.maxEP.get(), section.allowTamedMobs.get(),
-                            section.tamedDragonsOnly.get(), section.allowTensuraNamed.get(),
+                            section.allowTensuraNamed.get(),
                             section.maxStage.get(), section.requiredElement.get());
         }
     }
@@ -608,17 +618,15 @@ public final class PseudocoreConfig {
      * section, so an unknown item never limits anything.
      */
     public static final class TierLimits {
-        static final TierLimits PERMISSIVE = new TierLimits(0.0D, true, false, true);
+        static final TierLimits PERMISSIVE = new TierLimits(0.0D, true, true);
 
         private final double maxEP;
         private final boolean allowTamedMobs;
-        private final boolean tamedMobsOnly;
         private final boolean allowTensuraNamed;
 
-        TierLimits(double maxEP, boolean allowTamedMobs, boolean tamedMobsOnly, boolean allowTensuraNamed) {
+        TierLimits(double maxEP, boolean allowTamedMobs, boolean allowTensuraNamed) {
             this.maxEP = maxEP;
             this.allowTamedMobs = allowTamedMobs;
-            this.tamedMobsOnly = tamedMobsOnly;
             this.allowTensuraNamed = allowTensuraNamed;
         }
 
@@ -631,28 +639,21 @@ public final class PseudocoreConfig {
             return allowTamedMobs;
         }
 
-        /** Only tamed/owned mobs are capturable (#111); false never limits. */
-        public boolean tamedMobsOnly() {
-            return tamedMobsOnly;
-        }
-
         public boolean allowTensuraNamed() {
             return allowTensuraNamed;
         }
     }
 
-    /** The four live config values of one tier's section. */
+    /** The live config values of one tier's section. */
     public static final class TierSection {
         public final ModConfigSpec.DoubleValue maxEP;
         public final ModConfigSpec.BooleanValue allowTamedMobs;
-        public final ModConfigSpec.BooleanValue tamedMobsOnly;
         public final ModConfigSpec.BooleanValue allowTensuraNamed;
 
         TierSection(ModConfigSpec.DoubleValue maxEP, ModConfigSpec.BooleanValue allowTamedMobs,
-                    ModConfigSpec.BooleanValue tamedMobsOnly, ModConfigSpec.BooleanValue allowTensuraNamed) {
+                    ModConfigSpec.BooleanValue allowTensuraNamed) {
             this.maxEP = maxEP;
             this.allowTamedMobs = allowTamedMobs;
-            this.tamedMobsOnly = tamedMobsOnly;
             this.allowTensuraNamed = allowTensuraNamed;
         }
     }
@@ -660,20 +661,18 @@ public final class PseudocoreConfig {
     /** The capture limits one dragon tier enforces, resolved at read time. */
     public static final class DragonTierLimits {
         static final DragonTierLimits PERMISSIVE =
-                new DragonTierLimits(0.0D, true, false, true, 0, "");
+                new DragonTierLimits(0.0D, true, true, 0, "");
 
         private final double maxEP;
         private final boolean allowTamedMobs;
-        private final boolean tamedDragonsOnly;
         private final boolean allowTensuraNamed;
         private final int maxStage;
         private final String requiredElement;
 
-        DragonTierLimits(double maxEP, boolean allowTamedMobs, boolean tamedDragonsOnly,
-                         boolean allowTensuraNamed, int maxStage, String requiredElement) {
+        DragonTierLimits(double maxEP, boolean allowTamedMobs, boolean allowTensuraNamed,
+                         int maxStage, String requiredElement) {
             this.maxEP = maxEP;
             this.allowTamedMobs = allowTamedMobs;
-            this.tamedDragonsOnly = tamedDragonsOnly;
             this.allowTensuraNamed = allowTensuraNamed;
             this.maxStage = maxStage;
             this.requiredElement = requiredElement;
@@ -686,11 +685,6 @@ public final class PseudocoreConfig {
 
         public boolean allowTamedMobs() {
             return allowTamedMobs;
-        }
-
-        /** May this tier capture ONLY tamed/owned dragons (#150)? */
-        public boolean tamedDragonsOnly() {
-            return tamedDragonsOnly;
         }
 
         public boolean allowTensuraNamed() {
@@ -715,18 +709,15 @@ public final class PseudocoreConfig {
     public static final class DragonTierSection {
         public final ModConfigSpec.DoubleValue maxEP;
         public final ModConfigSpec.BooleanValue allowTamedMobs;
-        public final ModConfigSpec.BooleanValue tamedDragonsOnly;
         public final ModConfigSpec.BooleanValue allowTensuraNamed;
         public final ModConfigSpec.IntValue maxStage;
         public final ModConfigSpec.ConfigValue<String> requiredElement;
 
         DragonTierSection(ModConfigSpec.DoubleValue maxEP, ModConfigSpec.BooleanValue allowTamedMobs,
-                          ModConfigSpec.BooleanValue tamedDragonsOnly,
                           ModConfigSpec.BooleanValue allowTensuraNamed, ModConfigSpec.IntValue maxStage,
                           ModConfigSpec.ConfigValue<String> requiredElement) {
             this.maxEP = maxEP;
             this.allowTamedMobs = allowTamedMobs;
-            this.tamedDragonsOnly = tamedDragonsOnly;
             this.allowTensuraNamed = allowTensuraNamed;
             this.maxStage = maxStage;
             this.requiredElement = requiredElement;

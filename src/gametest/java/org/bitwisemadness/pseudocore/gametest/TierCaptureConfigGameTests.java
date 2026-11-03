@@ -28,6 +28,7 @@ import org.bitwisemadness.pseudocore.event.PseudocoreReleaseEvent;
 import org.bitwisemadness.pseudocore.item.PseudocoreItem;
 import org.bitwisemadness.pseudocore.item.component.ContainedMobComponent;
 import org.bitwisemadness.pseudocore.registry.ModDataComponents;
+import org.bitwisemadness.pseudocore.registry.ModEnchantments;
 import org.bitwisemadness.pseudocore.registry.ModItems;
 
 /**
@@ -56,12 +57,6 @@ public final class TierCaptureConfigGameTests {
             "hihiirokane");
 
     /**
-     * The tiers whose tamed-only gate defaults on (#111): the vanilla-metal
-     * line copper through netherite. Everything after it defaults off.
-     */
-    private static final java.util.Set<String> TAMED_ONLY_BY_DEFAULT = java.util.Set.of(
-            "copper", "iron", "silver", "gold", "netherite");
-
     /**
      * The default EP caps, following Tensura's own EP progression rebased at
      * x1.5 (see the tier list in {@code PseudocoreConfig}). Hihi'irokane, the
@@ -117,17 +112,10 @@ public final class TierCaptureConfigGameTests {
                             + section.maxEP.get());
             check(section.allowTamedMobs.get(), key + " must default to allowing tamed mobs");
             check(section.allowTensuraNamed.get(), key + " must default to allowing named mobs");
-            boolean expectedTamedOnly = TAMED_ONLY_BY_DEFAULT.contains(key);
-            check(section.tamedMobsOnly.get() == expectedTamedOnly,
-                    key + ".tamedMobsOnly must default to " + expectedTamedOnly
-                            + " (on for copper..netherite, off for the Tensura metals), got "
-                            + section.tamedMobsOnly.get());
 
             PseudocoreConfig.TierLimits limits = PseudocoreConfig.COMMON.limits(key);
             check(limits.maxEP() == expectedMaxEP && limits.allowTamedMobs() && limits.allowTensuraNamed(),
                     "the resolved limits for " + key + " must match the section's defaults");
-            check(limits.tamedMobsOnly() == expectedTamedOnly,
-                    "the resolved limits for " + key + " must carry its tamedMobsOnly default");
         }
 
         helper.succeed();
@@ -138,18 +126,10 @@ public final class TierCaptureConfigGameTests {
         var player = helper.makeMockPlayer(GameType.SURVIVAL);
         var cow = helper.spawn(EntityType.COW, 1, 1, 1);
         ItemStack stack = new ItemStack(ModItems.IRON_PSEUDOCORE.get());
-        PseudocoreConfig.TierSection iron = PseudocoreConfig.COMMON.tier("iron").orElseThrow();
-
-        // This probe predates the tamed-only default (#111): it pins the axis
-        // off so it keeps testing exactly what it is named for - a plain,
-        // untamed mob going into a core - under any default.
-        iron.tamedMobsOnly.set(false);
-        InteractionResult result;
-        try {
-            result = PseudocoreItem.tryCapture(player, cow, stack);
-        } finally {
-            iron.tamedMobsOnly.set(true);
-        }
+        // A wild mob needs the wild_capture enchantment (#159); the axis
+        // that used to gate this is gone, so the enchantment is the gate.
+        stack.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
+        InteractionResult result = PseudocoreItem.tryCapture(player, cow, stack);
 
         check(result == InteractionResult.SUCCESS,
                 "a plain mob must be capturable by the iron tier, got " + result);
@@ -188,47 +168,37 @@ public final class TierCaptureConfigGameTests {
     }
 
     /**
-     * The tamed-only axis (#111): with it on (the copper default), an
-     * untamed mob is refused and a tamed one passes; with it off the same
-     * untamed mob captures. One cow walks all three states, restored in a
-     * finally block like every config flip in this file.
+     * The wild gate (#159): a wild mob is refused on a bare core and
+     * captured with {@code wild_capture}, while a tamed mob passes either
+     * way - the enchantment opens the wild axis only, never the
+     * anti-theft layer.
      */
     @GameTest(template = "test_area")
-    public static void untamedCaptureFollowsTamedMobsOnly(GameTestHelper helper) {
+    public static void untamedCaptureNeedsTheWildEnchantment(GameTestHelper helper) {
         var player = helper.makeMockPlayer(GameType.SURVIVAL);
         var cow = helper.spawn(EntityType.COW, 1, 1, 1);
-        PseudocoreConfig.TierSection copper = PseudocoreConfig.COMMON.tier("copper").orElseThrow();
         ItemStack stack = new ItemStack(ModItems.COPPER_PSEUDOCORE.get());
 
-        // On by default: the untamed cow is refused and nothing is stored.
-        check(copper.tamedMobsOnly.get(),
-                "the copper tier must default to tamed-only (#111)");
+        // Wild, bare core: refused and nothing stored.
         InteractionResult refused = PseudocoreItem.tryCapture(player, cow, stack);
         check(refused == InteractionResult.PASS,
-                "a tamed-only tier must refuse an untamed mob, got " + refused);
+                "a bare core must refuse a wild mob, got " + refused);
         check(!stack.has(ModDataComponents.CONTAINED_MOB.get()),
                 "a refused capture must not write the contained_mob component");
 
-        // Still on: a tamed mob passes the axis (anti-theft points at this
-        // very player, so the tamed-only gate is the last gate in play).
+        // Wild, enchanted core: captured.
+        ItemStack enchanted = new ItemStack(ModItems.COPPER_PSEUDOCORE.get());
+        enchanted.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
+        check(PseudocoreItem.tryCapture(player, cow, enchanted) == InteractionResult.SUCCESS,
+                "wild_capture must open the gate for a wild mob");
+
+        // Tamed, bare core: still captured - the anti-theft layer answers
+        // for owned mobs and never the wild gate.
         Wolf wolf = helper.spawn(EntityType.WOLF, 2, 1, 2);
         wolf.tame(player);
-        InteractionResult tamed = PseudocoreItem.tryCapture(player, wolf, stack);
-        check(tamed == InteractionResult.SUCCESS,
-                "a tamed-only tier must still capture a tamed mob, got " + tamed);
-
-        // Off: the same untamed cow captures - into a fresh core, since the
-        // tamed wolf above now fills the first one (the already-full gate
-        // would otherwise be the thing refusing here).
-        copper.tamedMobsOnly.set(false);
-        try {
-            ItemStack second = new ItemStack(ModItems.COPPER_PSEUDOCORE.get());
-            InteractionResult allowed = PseudocoreItem.tryCapture(player, cow, second);
-            check(allowed == InteractionResult.SUCCESS,
-                    "with the axis off an untamed mob must capture, got " + allowed);
-        } finally {
-            copper.tamedMobsOnly.set(true);
-        }
+        ItemStack bare = new ItemStack(ModItems.COPPER_PSEUDOCORE.get());
+        check(PseudocoreItem.tryCapture(player, wolf, bare) == InteractionResult.SUCCESS,
+                "a tamed mob must pass the wild gate without the enchantment");
 
         helper.succeed();
     }
@@ -305,16 +275,10 @@ public final class TierCaptureConfigGameTests {
         var player = helper.makeMockPlayer(GameType.SURVIVAL);
         var cow = helper.spawn(EntityType.COW, 2, 1, 2);
         ItemStack stack = new ItemStack(ModItems.IRON_PSEUDOCORE.get());
-        PseudocoreConfig.TierSection iron = PseudocoreConfig.COMMON.tier("iron").orElseThrow();
+        // Untamed cows throughout: the wild gate needs wild_capture (#159).
+        stack.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
 
-        // Untamed cows throughout: pin the tamed-only default (#111) off for
-        // this round trip - the gate has its own test.
-        iron.tamedMobsOnly.set(false);
-        try {
-            roundTripCapture(helper, player, cow, stack);
-        } finally {
-            iron.tamedMobsOnly.set(true);
-        }
+        roundTripCapture(helper, player, cow, stack);
 
         helper.succeed();
     }
@@ -370,6 +334,14 @@ public final class TierCaptureConfigGameTests {
         if (!condition) {
             throw new GameTestAssertException(message);
         }
+    }
+
+    /** The enchantment holder for the wild gate's enchantment (#159). */
+    private static net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> holder(
+            GameTestHelper helper, net.minecraft.resources.ResourceKey<
+                    net.minecraft.world.item.enchantment.Enchantment> key) {
+        return helper.getLevel().registryAccess()
+                .lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getOrThrow(key);
     }
 
     /**

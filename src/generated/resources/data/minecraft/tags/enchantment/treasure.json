@@ -1,0 +1,24 @@
+{
+  "values": [
+    {
+      "id": "pseudocore:cost_reduction",
+      "required": false
+    },
+    {
+      "id": "pseudocore:aura_payment",
+      "required": false
+    },
+    {
+      "id": "pseudocore:split_payment",
+      "required": false
+    },
+    {
+      "id": "pseudocore:wild_capture",
+      "required": false
+    },
+    {
+      "id": "pseudocore:preservation",
+      "required": false
+    }
+  ]
+}
