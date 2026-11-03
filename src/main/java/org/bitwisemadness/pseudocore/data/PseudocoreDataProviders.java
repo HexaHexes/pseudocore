@@ -41,6 +41,11 @@ public final class PseudocoreDataProviders {
                         event.getExistingFileHelper()));
         generator.addProvider(true,
                 new PseudocoreOptionalPacksProvider(generator.getPackOutput()));
+        generator.addProvider(true,
+                new PseudocoreEnchantmentProvider(generator.getPackOutput()));
+        generator.addProvider(true,
+                new PseudocoreEnchantmentTagProvider(generator.getPackOutput(), event.getLookupProvider(),
+                        event.getExistingFileHelper()));
     }
 
     /**

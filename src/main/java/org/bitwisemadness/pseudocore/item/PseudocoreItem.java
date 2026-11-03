@@ -10,6 +10,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -25,8 +26,10 @@ import net.minecraft.world.phys.Vec3;
 import org.bitwisemadness.pseudocore.config.PseudocoreConfig;
 import org.bitwisemadness.pseudocore.item.component.ContainedMobComponent;
 import org.bitwisemadness.pseudocore.registry.ModDataComponents;
+import org.bitwisemadness.pseudocore.registry.ModEnchantments;
 import org.bitwisemadness.pseudocore.registry.ModGameRules;
 import org.bitwisemadness.pseudocore.util.EntityDataHelper;
+import org.bitwisemadness.pseudocore.util.PseudocoreCosts;
 import org.bitwisemadness.pseudocore.util.TensuraBridge;
 import org.bitwisemadness.pseudocore.util.TooltipHelper;
 
@@ -127,10 +130,11 @@ public class PseudocoreItem extends Item {
         // the permissive no-op limits, so nothing else changes behaviour.
         PseudocoreConfig.TierLimits limits = PseudocoreConfig.tierLimits(stack.getItem());
 
-        // Tamed-only (#111): requirement before permission axes. Its own key
-        // since #146 - this gate refuses the UNTAMED, so the shared message
-        // said the opposite; the allowTamedMobs gate below keeps that key.
-        if (limits.tamedMobsOnly() && !isTamedOrOwned(target)) {
+        // Wild capture (#159): universal unless the core carries the
+        // wild_capture enchantment - the per-tier axis retired, the
+        // anti-theft rule below stays unconditional.
+        if (!isTamedOrOwned(target)
+                && !ModEnchantments.has(player.level().registryAccess(), stack, ModEnchantments.WILD_CAPTURE)) {
             return refuse(player, Component.translatable("pseudocore.message.tamed_only",
                     stack.getHoverName()));
         }
@@ -154,6 +158,16 @@ public class PseudocoreItem extends Item {
 
         CompoundTag data = EntityDataHelper.saveWithoutId(target);
         UUID uuid = target.getUUID();
+
+        // The capture cost (#159): EP as MP with Tensura, XP points without,
+        // discounted by cost_reduction. Charged before anything is stored, so
+        // a refusal stores nothing and takes nothing.
+        if (player instanceof ServerPlayer serverPlayer) {
+            var costRefusal = PseudocoreCosts.charge(serverPlayer, target, stack);
+            if (costRefusal.isPresent()) {
+                return refuse(player, costRefusal.get());
+            }
+        }
 
         stack.set(ModDataComponents.CONTAINED_MOB.get(),
                 new ContainedMobComponent(id, uuid, data));

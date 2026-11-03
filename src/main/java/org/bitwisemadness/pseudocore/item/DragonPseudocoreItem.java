@@ -5,14 +5,17 @@ import com.iafenvoy.iceandfire.item.DragonHornItem;
 import com.iafenvoy.iceandfire.item.component.DragonHornComponent;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import org.bitwisemadness.pseudocore.config.PseudocoreConfig;
+import org.bitwisemadness.pseudocore.registry.ModEnchantments;
 import org.bitwisemadness.pseudocore.util.GearEvolutionBridge;
 import org.bitwisemadness.pseudocore.util.IafHornAccess;
+import org.bitwisemadness.pseudocore.util.PseudocoreCosts;
 import org.bitwisemadness.pseudocore.util.TensuraBridge;
 
 /**
@@ -77,10 +80,10 @@ public class DragonPseudocoreItem extends DragonHornItem {
                     stack.getHoverName(), display));
         }
 
-        // Wild-dragon axis (#150), requirement before permission like the
-        // beast line (#111): metal refuses wild dragons by default, the
-        // dragonsteel line hunts them. Wild = IaF's flag unset, no owner.
-        if (limits.tamedDragonsOnly() && !isTamedOrOwned(dragon)) {
+        // Wild capture (#159): universal unless the core carries the
+        // wild_capture enchantment - the per-tier dragon axis retired.
+        if (!isTamedOrOwned(dragon)
+                && !ModEnchantments.has(player.level().registryAccess(), stack, ModEnchantments.WILD_CAPTURE)) {
             return refuse(player, Component.translatable("pseudocore.message.wild_dragon",
                     stack.getHoverName()));
         }
@@ -106,7 +109,21 @@ public class DragonPseudocoreItem extends DragonHornItem {
                     target.getType().getDescription(), stack.getHoverName()));
         }
 
+        // The capture cost (#159): EP as MP with Tensura, XP points without,
+        // discounted by cost_reduction. Charged before IaF stores, refunded
+        // when its own guard refuses - a refused capture costs nothing.
+        if (player instanceof ServerPlayer serverPlayer) {
+            var costRefusal = PseudocoreCosts.charge(serverPlayer, dragon, stack);
+            if (costRefusal.isPresent()) {
+                return refuse(player, costRefusal.get());
+            }
+        }
+
         InteractionResult result = super.interactLivingEntity(stack, player, target, hand);
+        if (player instanceof ServerPlayer serverPlayer
+                && result != InteractionResult.SUCCESS) {
+            PseudocoreCosts.refund(serverPlayer, dragon, stack);
+        }
         if (result == InteractionResult.SUCCESS) {
             // Element trait (#153): capture stamps the dragon's element onto
             // GE's specialization for the branch evolution (addon #60); every

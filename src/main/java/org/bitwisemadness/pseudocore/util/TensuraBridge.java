@@ -99,6 +99,31 @@ public final class TensuraBridge {
     }
 
     /**
+     * The player's {@code [AP (aura), MP (magicule)]} pools (#159), or
+     * empty without Tensura or a storage holder - the cost path treats
+     * empty as "no economy here" rather than a refusal.
+     */
+    public static Optional<double[]> readPools(LivingEntity entity) {
+        if (!isLoaded() || entity == null) return Optional.empty();
+        try {
+            return Optional.ofNullable(TensuraAccess.readPools(entity));
+        } catch (Throwable t) {
+            return Optional.empty();
+        }
+    }
+
+    /** Overwrite both pools and mark the storage dirty for sync (#159). */
+    public static void writePools(LivingEntity entity, double aura, double magicule) {
+        if (!isLoaded() || entity == null) return;
+        try {
+            TensuraAccess.writePools(entity, aura, magicule);
+        } catch (Throwable ignored) {
+            // A storage that refuses the write simply keeps its pools;
+            // the charge is best-effort by design, never a crash.
+        }
+    }
+
+    /**
      * Whether Tensura's naming system has named this mob - distinct from a
      * vanilla custom name. Read by the per-tier named-mob gate.
      */

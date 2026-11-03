@@ -9,8 +9,11 @@ import net.minecraft.data.tags.ItemTagsProvider;
 import net.minecraft.data.tags.TagsProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 import org.bitwisemadness.pseudocore.Pseudocore;
+import org.bitwisemadness.pseudocore.registry.ModEnchantments;
+import org.bitwisemadness.pseudocore.registry.ModItems;
 
 /**
  * The {@code c:ingots/<metal>} common tags (#116): each of Tensura's
@@ -45,6 +48,13 @@ public final class PseudocoreItemTagsProvider extends ItemTagsProvider {
             tag(TagKey.create(Registries.ITEM,
                             ResourceLocation.fromNamespaceAndPath("c", "ingots/" + metal)))
                     .addOptional(ResourceLocation.fromNamespaceAndPath("tensura", metal + "_ingot"));
+        }
+        // The cores tag the #159 enchantments support: every core that
+        // registers in this environment, so the enchantments never name
+        // an absent item.
+        var cores = tag(ModEnchantments.CORES);
+        for (Item core : ModItems.all()) {
+            cores.add(core);
         }
     }
 }

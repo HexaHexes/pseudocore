@@ -92,6 +92,29 @@ final class TensuraAccess {
     }
 
     /**
+     * The player's {@code [AP (aura), MP (magicule)]} pools (#159), or null
+     * when the entity has no storage holder - the caller treats that as "no
+     * economy here" rather than a refusal.
+     */
+    static double[] readPools(LivingEntity entity) {
+        ExistenceStorage exist = readExistence(entity);
+        if (exist == null) return null;
+        return new double[]{exist.getAura(), exist.getMagicule()};
+    }
+
+    /**
+     * Overwrite both pools and mark the storage dirty, so ManasCore syncs
+     * the change (#159's charge path).
+     */
+    static void writePools(LivingEntity entity, double aura, double magicule) {
+        ExistenceStorage exist = readExistence(entity);
+        if (exist == null) return;
+        exist.setAura(aura);
+        exist.setMagicule(magicule);
+        exist.markDirty();
+    }
+
+    /**
      * Whether Tensura's naming system has given this mob a name - not a vanilla
      * custom name. {@code ExistenceStorage#getName} is what Tensura's own naming
      * flow writes.

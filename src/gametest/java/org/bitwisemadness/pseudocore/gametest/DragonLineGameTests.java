@@ -43,9 +43,11 @@ import org.bitwisemadness.pseudocore.Pseudocore;
 import org.bitwisemadness.pseudocore.config.PseudocoreConfig;
 import org.bitwisemadness.pseudocore.item.DragonPseudocoreItem;
 import org.bitwisemadness.pseudocore.registry.ModDataComponents;
+import org.bitwisemadness.pseudocore.registry.ModEnchantments;
 import org.bitwisemadness.pseudocore.registry.ModItems;
 import org.bitwisemadness.pseudocore.util.GearEvolutionBridge;
 import org.bitwisemadness.pseudocore.util.IafHornAccess;
+import org.bitwisemadness.pseudocore.util.TensuraBridge;
 import org.bitwisemadness.pseudocore.util.TooltipHelper;
 
 /**
@@ -151,13 +153,11 @@ public final class DragonLineGameTests {
                             + " (1.5x its stage's end-of-row EP, 0 for the uncapped netherite tier), got "
                             + section.maxEP.get());
             check(section.allowTamedMobs.get(), key + " must default to allowing tamed dragons");
-            check(section.tamedDragonsOnly.get(),
-                    key + " must default tamed-only - no wild dragons on the metal line (#150)");
             check(section.allowTensuraNamed.get(), key + " must default to allowing named dragons");
 
             PseudocoreConfig.DragonTierLimits limits = PseudocoreConfig.COMMON.dragonTierLimits(key);
             check(limits.maxStage() == STAGE_LADDER[i] && limits.maxEP() == expectedMaxEP
-                    && limits.allowTamedMobs() && limits.tamedDragonsOnly() && limits.allowTensuraNamed(),
+                    && limits.allowTamedMobs() && limits.allowTensuraNamed(),
                     "the resolved limits for " + key + " must match the section's defaults");
         }
 
@@ -183,13 +183,10 @@ public final class DragonLineGameTests {
                             + section.requiredElement.get());
             check(section.allowTamedMobs.get() && section.allowTensuraNamed.get(),
                     entry[0] + " must default permissive on the other axes");
-            check(!section.tamedDragonsOnly.get(),
-                    entry[0] + " must default OPEN to wild dragons - the dragonsteel line hunts them (#150)");
 
             PseudocoreConfig.DragonTierLimits limits =
                     PseudocoreConfig.COMMON.dragonTierLimits(entry[0]);
             check(limits.maxStage() == 0 && limits.maxEP() == 0.0D
-                            && !limits.tamedDragonsOnly()
                             && entry[1].equalsIgnoreCase(limits.requiredElement()),
                     entry[0] + "'s resolved limits must match its section");
         }
@@ -262,24 +259,19 @@ public final class DragonLineGameTests {
         var player = helper.makeMockPlayer(GameType.SURVIVAL);
 
         var cow = helper.spawn(net.minecraft.world.entity.EntityType.COW, 1, 1, 1);
-        // The control probes the click WIRING with an untamed cow: pin the
-        // tamed-only default (#111) off for the control leg only.
-        PseudocoreConfig.TierSection iron = PseudocoreConfig.COMMON.tier("iron").orElseThrow();
-        iron.tamedMobsOnly.set(false);
-        boolean controlPassed;
-        try {
-            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.IRON_PSEUDOCORE.get()));
-            var beastEvent = new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, cow);
-            NeoForge.EVENT_BUS.post(beastEvent);
-            controlPassed = beastEvent.isCanceled()
-                    && beastEvent.getCancellationResult() == InteractionResult.SUCCESS
-                    && player.getMainHandItem().has(ModDataComponents.CONTAINED_MOB.get());
-        } finally {
-            iron.tamedMobsOnly.set(true);
-        }
+        // The control probes the click WIRING with an untamed cow: the wild
+        // gate needs wild_capture on this leg's core (#159).
+        ItemStack controlCore = new ItemStack(ModItems.IRON_PSEUDOCORE.get());
+        controlCore.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
+        player.setItemInHand(InteractionHand.MAIN_HAND, controlCore);
+        var beastEvent = new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, cow);
+        NeoForge.EVENT_BUS.post(beastEvent);
+        boolean controlPassed = beastEvent.isCanceled()
+                && beastEvent.getCancellationResult() == InteractionResult.SUCCESS
+                && player.getMainHandItem().has(ModDataComponents.CONTAINED_MOB.get());
         check(controlPassed,
                 "control failed: the beast line's click must capture the cow and cancel the event"
-                        + " (tamed-only pinned off for this leg)");
+                        + " (wild_capture on the control core)");
 
         @SuppressWarnings("unchecked")
         var fireDragon = (net.minecraft.world.entity.EntityType<DragonBaseEntity>) BuiltInRegistries.ENTITY_TYPE
@@ -502,6 +494,10 @@ public final class DragonLineGameTests {
         Item fireCore = itemOrAir("pseudocore:fire_dragonsteel_pseudocore");
         check(fireCore != Items.AIR, "the fire dragonsteel core must exist");
         ItemStack stack = new ItemStack(fireCore);
+        // Isolate the element gate: the universal wild gate (#159) and the
+        // capture cost must not be what refuses this pair.
+        stack.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
+        TensuraBridge.writePools(player, 1_000_000.0D, 1_000_000.0D);
         InteractionResult refused = IafHornAccess.tryCaptureDragon(player, dragon, stack);
         check(refused == InteractionResult.PASS,
                 "a fire-bound tier must refuse an ice dragon with PASS (our gate, before IaF), got "
@@ -600,14 +596,14 @@ public final class DragonLineGameTests {
     }
 
     /**
-     * The wild-dragon axis (#150): the metal line refuses a wild dragon by
-     * default (our gate, PASS, before IaF is asked), dragonsteel's default
-     * binding reaches IaF's ownership guard (CONSUME), and flipping the
-     * metal tier's {@code tamedDragonsOnly} opens it - the per-tier
-     * config, proven on a live value.
+     * The wild-dragon gate (#159): a bare core refuses a wild dragon
+     * before IaF is asked (PASS, our gate), and {@code wild_capture}
+     * opens it - after which IaF's own ownership guard still answers for
+     * a mock holder (CONSUME), the documented boundary from #43. The
+     * per-tier config axis that used to decide this is gone.
      */
     @GameTest(template = "test_area")
-    public static void wildDragonAxisGatesMetalAndDragonsteelLines(GameTestHelper helper) {
+    public static void wildDragonCaptureNeedsTheWildEnchantment(GameTestHelper helper) {
         if (!ModItems.dragonTiersAvailable()) {
             helper.succeed();
             return;
@@ -619,32 +615,21 @@ public final class DragonLineGameTests {
         DragonBaseEntity dragon = helper.spawn(fireDragon, 1, 1, 1);
         check(!dragon.isTame(), "a freshly spawned dragon must read as wild");
 
-        // Metal line, default: tamed-only - our gate refuses before IaF.
+        // Bare core: our gate refuses before IaF is asked (#159).
         ItemStack copper = new ItemStack(ModItems.DRAGON_TIERS.get(0).get());
         check(IafHornAccess.tryCaptureDragon(player, dragon, copper) == InteractionResult.PASS,
-                "the copper dragon core must refuse a wild dragon by default (#150)");
+                "a bare core must refuse a wild dragon (#159)");
         check(IafHornAccess.read(copper) == null,
                 "a refused capture must not store the dragon");
 
-        // Dragonsteel, default: the axis is open - IaF's own guard answers.
+        // With the enchantment: our gate passes, IaF's guard answers.
         ItemStack steel = new ItemStack(itemOrAir("pseudocore:fire_dragonsteel_pseudocore"));
         check(steel.getItem() != Items.AIR, "the fire dragonsteel core must exist");
+        steel.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
         check(IafHornAccess.tryCaptureDragon(player, dragon, steel) == InteractionResult.CONSUME,
-                "the dragonsteel line must reach IaF's guard with a wild dragon - gate open (#150)");
+                "wild_capture must open the dragon gate - IaF's guard still answers (#159)");
         check(IafHornAccess.read(steel) == null,
                 "a capture stopped by IaF's guard must not store the dragon");
-
-        // The axis is per-tier config: flipping copper's tamedDragonsOnly opens it.
-        var section = PseudocoreConfig.COMMON.dragonTier("copper").orElseThrow();
-        section.tamedDragonsOnly.set(false);
-        try {
-            check(IafHornAccess.tryCaptureDragon(player, dragon, copper) == InteractionResult.CONSUME,
-                    "with tamedDragonsOnly off, the copper dragon core must reach IaF's guard (#150)");
-            check(IafHornAccess.read(copper) == null,
-                    "IaF's decline must not store the dragon");
-        } finally {
-            section.tamedDragonsOnly.set(true);
-        }
 
         helper.succeed();
     }
@@ -699,5 +684,13 @@ public final class DragonLineGameTests {
         if (!condition) {
             throw new GameTestAssertException(message);
         }
+    }
+
+    /** The enchantment holder for the wild gate's enchantment (#159). */
+    private static net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> holder(
+            GameTestHelper helper, net.minecraft.resources.ResourceKey<
+                    net.minecraft.world.item.enchantment.Enchantment> key) {
+        return helper.getLevel().registryAccess()
+                .lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getOrThrow(key);
     }
 }
