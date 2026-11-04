@@ -27,6 +27,13 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  * with MixinExtras' {@code @Local} because the redirected call carries
  * neither.</p>
  *
+ * <p>The handler therefore also takes the redirected call's receiver
+ * ({@code ItemRenderer self}) as its first parameter: Mixin validates the
+ * target's {@code this} in an instance {@code @Redirect} signature even
+ * though the body merges into the target - dropping it fails apply at
+ * startup (the alpha.1 crash, #168), which no dedicated-server gametest
+ * can see because this class ships in the {@code client} array.</p>
+ *
  * <p>Client-only by construction: this class ships in the config's
  * {@code client} array, so a dedicated server never applies it and never
  * resolves {@link MobGlint} (whose imports are all client classes the
@@ -42,14 +49,12 @@ public abstract class ItemRendererShimmerMixin {
                     target = "Lnet/minecraft/client/renderer/entity/ItemRenderer;renderModelLists(Lnet/minecraft/client/resources/model/BakedModel;Lnet/minecraft/world/item/ItemStack;IILcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;)V"
             )
     )
-    private void pseudocore$mobShimmer(BakedModel model, ItemStack stack, int combinedLight,
-                                       int combinedOverlay, PoseStack poseStack,
-                                       VertexConsumer buffer,
+    private void pseudocore$mobShimmer(ItemRenderer self, BakedModel model, ItemStack stack,
+                                       int combinedLight, int combinedOverlay,
+                                       PoseStack poseStack, VertexConsumer buffer,
                                        @Local(argsOnly = true) MultiBufferSource bufferSource) {
-        // Post-merge `this` is the ItemRenderer; the Object bridge exists only
-        // so the standalone compile can see the target's method (mixins do not
-        // inherit it), and renderModelLists is public on the target.
-        ItemRenderer self = (ItemRenderer) (Object) this;
+        // Receiver as parameter 0: instance @Redirect validates `this` in the
+        // signature even post-merge - omitting it fails apply (#168, alpha.1).
         self.renderModelLists(model, stack, combinedLight, combinedOverlay, poseStack, buffer);
         var shimmer = MobGlint.typeFor(stack);
         if (shimmer != null) {
