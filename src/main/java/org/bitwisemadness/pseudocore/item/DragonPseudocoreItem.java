@@ -80,10 +80,10 @@ public class DragonPseudocoreItem extends DragonHornItem {
                     stack.getHoverName(), display));
         }
 
-        // Wild capture (#159): universal unless the core carries the
-        // wild_capture enchantment - the per-tier dragon axis retired.
+        // Hunter's Boon (#159): universal unless the core carries the
+        // hunters_boon enchantment - the per-tier dragon axis retired.
         if (!isTamedOrOwned(dragon)
-                && !ModEnchantments.has(player.level().registryAccess(), stack, ModEnchantments.WILD_CAPTURE)) {
+                && !ModEnchantments.has(player.level().registryAccess(), stack, ModEnchantments.HUNTERS_BOON)) {
             return refuse(player, Component.translatable("pseudocore.message.wild_dragon",
                     stack.getHoverName()));
         }
@@ -110,7 +110,7 @@ public class DragonPseudocoreItem extends DragonHornItem {
         }
 
         // The capture cost (#159): EP as MP with Tensura, XP points without,
-        // discounted by cost_reduction. Charged before IaF stores, refunded
+        // discounted by core_efficiency. Charged before IaF stores, refunded
         // when its own guard refuses - a refused capture costs nothing.
         if (player instanceof ServerPlayer serverPlayer) {
             var costRefusal = PseudocoreCosts.charge(serverPlayer, dragon, stack);

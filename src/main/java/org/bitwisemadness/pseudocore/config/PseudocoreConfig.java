@@ -555,7 +555,7 @@ public final class PseudocoreConfig {
                             "The XP-point cost per point of mob max HP for a capture, recall or",
                             "death-preserve WITHOUT Tensura installed: mob max HP x this, in whole",
                             "experience points (never levels). With Tensura the EP/MP economy",
-                            "replaces it entirely. The cost_reduction enchantment discounts either",
+                            "replaces it entirely. The core_efficiency enchantment discounts either",
                             "backend. #159.")
                     .defineInRange("xpPerMobHp", 5, 0, Integer.MAX_VALUE);
             builder.pop();

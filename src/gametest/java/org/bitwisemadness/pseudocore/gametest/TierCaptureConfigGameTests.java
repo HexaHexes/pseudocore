@@ -126,9 +126,9 @@ public final class TierCaptureConfigGameTests {
         var player = helper.makeMockPlayer(GameType.SURVIVAL);
         var cow = helper.spawn(EntityType.COW, 1, 1, 1);
         ItemStack stack = new ItemStack(ModItems.IRON_PSEUDOCORE.get());
-        // A wild mob needs the wild_capture enchantment (#159); the axis
+        // A wild mob needs the hunters_boon enchantment (#159); the axis
         // that used to gate this is gone, so the enchantment is the gate.
-        stack.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
+        stack.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
         InteractionResult result = PseudocoreItem.tryCapture(player, cow, stack);
 
         check(result == InteractionResult.SUCCESS,
@@ -169,7 +169,7 @@ public final class TierCaptureConfigGameTests {
 
     /**
      * The wild gate (#159): a wild mob is refused on a bare core and
-     * captured with {@code wild_capture}, while a tamed mob passes either
+     * captured with {@code hunters_boon}, while a tamed mob passes either
      * way - the enchantment opens the wild axis only, never the
      * anti-theft layer.
      */
@@ -188,9 +188,9 @@ public final class TierCaptureConfigGameTests {
 
         // Wild, enchanted core: captured.
         ItemStack enchanted = new ItemStack(ModItems.COPPER_PSEUDOCORE.get());
-        enchanted.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
+        enchanted.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
         check(PseudocoreItem.tryCapture(player, cow, enchanted) == InteractionResult.SUCCESS,
-                "wild_capture must open the gate for a wild mob");
+                "hunters_boon must open the gate for a wild mob");
 
         // Tamed, bare core: still captured - the anti-theft layer answers
         // for owned mobs and never the wild gate.
@@ -275,8 +275,8 @@ public final class TierCaptureConfigGameTests {
         var player = helper.makeMockPlayer(GameType.SURVIVAL);
         var cow = helper.spawn(EntityType.COW, 2, 1, 2);
         ItemStack stack = new ItemStack(ModItems.IRON_PSEUDOCORE.get());
-        // Untamed cows throughout: the wild gate needs wild_capture (#159).
-        stack.enchant(holder(helper, ModEnchantments.WILD_CAPTURE), 1);
+        // Untamed cows throughout: the wild gate needs hunters_boon (#159).
+        stack.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
 
         roundTripCapture(helper, player, cow, stack);
 

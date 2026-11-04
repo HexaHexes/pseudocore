@@ -18,23 +18,27 @@ import org.bitwisemadness.pseudocore.Pseudocore;
  * "registration" here means naming the keys (the data ships from the
  * datagen provider) and reading levels back through the live registry.
  *
+ * <p>Ids follow the display names since #165, when the payment family
+ * rotated with the split-by-default economy: a change here must travel
+ * with the provider ids, the lang keys and the description guard.</p>
+ *
  * <p>Everything reads through {@link #levelOf}, which takes the registry
  * provider from the caller's level - no static registry handle, so it
  * works identically on both sides of a sync.</p>
  */
 public final class ModEnchantments {
 
-    /** The linear MP-cost reduction, 15% per level (max level 6 = 90%). */
-    public static final ResourceKey<Enchantment> COST_REDUCTION = key("cost_reduction");
+    /** Core Efficiency: the linear cost reduction, 15% per level (max level 6 = 90%). */
+    public static final ResourceKey<Enchantment> CORE_EFFICIENCY = key("core_efficiency");
 
-    /** Pay the cost from AP (aura) instead of MP (magicule). */
-    public static final ResourceKey<Enchantment> AURA_PAYMENT = key("aura_payment");
+    /** Warrior's Aura: the whole capture/recall cost from AP (aura) instead of MP. */
+    public static final ResourceKey<Enchantment> WARRIORS_AURA = key("warriors_aura");
 
-    /** Split the cost evenly between MP and AP. */
-    public static final ResourceKey<Enchantment> SPLIT_PAYMENT = key("split_payment");
+    /** Wizard's Magicules: the whole cost from MP (magicule); the default is a 50/50 split (#165). */
+    public static final ResourceKey<Enchantment> WIZARDS_MAGICULES = key("wizards_magicules");
 
-    /** Open the wild-capture gate (otherwise every core refuses wild mobs). */
-    public static final ResourceKey<Enchantment> WILD_CAPTURE = key("wild_capture");
+    /** Hunter's Boon: opens the wild-capture gate - otherwise every core refuses wild mobs. */
+    public static final ResourceKey<Enchantment> HUNTERS_BOON = key("hunters_boon");
 
     /** Gate death-preserve: a core without it never preserves a dying mob. */
     public static final ResourceKey<Enchantment> PRESERVATION = key("preservation");
@@ -45,7 +49,7 @@ public final class ModEnchantments {
 
     /** All five keys, in description-guard order. */
     public static final List<ResourceKey<Enchantment>> ALL = List.of(
-            COST_REDUCTION, AURA_PAYMENT, SPLIT_PAYMENT, WILD_CAPTURE, PRESERVATION);
+            CORE_EFFICIENCY, WARRIORS_AURA, WIZARDS_MAGICULES, HUNTERS_BOON, PRESERVATION);
 
     private ModEnchantments() {
     }

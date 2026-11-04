@@ -1,7 +1,7 @@
 {
   "anvil_cost": 1,
   "description": {
-    "translate": "enchantment.pseudocore.aura_payment"
+    "translate": "enchantment.pseudocore.warriors_aura"
   },
   "effects": {},
   "max_cost": {

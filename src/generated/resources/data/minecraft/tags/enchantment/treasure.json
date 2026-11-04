@@ -1,19 +1,19 @@
 {
   "values": [
     {
-      "id": "pseudocore:cost_reduction",
+      "id": "pseudocore:core_efficiency",
       "required": false
     },
     {
-      "id": "pseudocore:aura_payment",
+      "id": "pseudocore:warriors_aura",
       "required": false
     },
     {
-      "id": "pseudocore:split_payment",
+      "id": "pseudocore:wizards_magicules",
       "required": false
     },
     {
-      "id": "pseudocore:wild_capture",
+      "id": "pseudocore:hunters_boon",
       "required": false
     },
     {

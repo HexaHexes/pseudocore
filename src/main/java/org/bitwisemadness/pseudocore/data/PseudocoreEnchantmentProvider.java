@@ -21,16 +21,16 @@ import org.bitwisemadness.pseudocore.Pseudocore;
  * {@code effects} is empty on purpose - every behaviour is implemented in
  * code by the consumers of {@code ModEnchantments.levelOf}, because the
  * reduction is a linear 15%/level and the rest are presence checks. The
- * {@code cost_reduction} enchantment's six levels are therefore described
+ * {@code core_efficiency} enchantment's six levels are therefore described
  * by the Enchantment Descriptions keys shipped in the lang file.</p>
  */
 public final class PseudocoreEnchantmentProvider implements DataProvider {
 
-    /** The five enchantments, by id and level cap (#159). */
+    /** The five enchantments, by id and level cap (#159, ids per #165). */
     static final List<String> ENCHANTMENTS = List.of(
-            "cost_reduction", "aura_payment", "split_payment", "wild_capture", "preservation");
+            "core_efficiency", "warriors_aura", "wizards_magicules", "hunters_boon", "preservation");
 
-    private static final int COST_REDUCTION_LEVELS = 6;
+    private static final int CORE_EFFICIENCY_LEVELS = 6;
 
     private final Path outputRoot;
 
@@ -49,9 +49,9 @@ public final class PseudocoreEnchantmentProvider implements DataProvider {
             enchantment.add("description", description);
 
             enchantment.addProperty("supported_items", "#" + Pseudocore.MOD_ID + ":pseudocore_cores");
-            enchantment.addProperty("weight", id.equals("cost_reduction") ? 2 : 1);
+            enchantment.addProperty("weight", id.equals("core_efficiency") ? 2 : 1);
             enchantment.addProperty("max_level",
-                    id.equals("cost_reduction") ? COST_REDUCTION_LEVELS : 1);
+                    id.equals("core_efficiency") ? CORE_EFFICIENCY_LEVELS : 1);
 
             JsonObject minCost = new JsonObject();
             minCost.addProperty("base", 1);
