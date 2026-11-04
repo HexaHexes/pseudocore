@@ -143,17 +143,9 @@ public class DragonPseudocoreItem extends DragonHornItem {
                 || (TensuraBridge.isLoaded() && TensuraBridge.readOwner(dragon).isPresent());
     }
 
-    /**
-     * A filled dragon core takes the vanilla enchantment-glint path, matching
-     * the beast line's simplification (#86): the stored dragon is read through
-     * {@link IafHornAccess} - the mod's one IaF importer - and from there it is
-     * vanilla's foil check and vanilla's glint pipeline all the way down. An
-     * empty horn reads null and stays matte.
-     */
-    @Override
-    public boolean isFoil(ItemStack stack) {
-        return IafHornAccess.read(stack) != null || super.isFoil(stack);
-    }
+    // Glint (#86, split per #160): same matrix as the beast line - the foil
+    // is the enchantment's alone, and the stored dragon colours the shimmer
+    // through MobGlint's IafHornAccess read. GlintGameTests pins the rows.
 
     /**
      * Refuse with an actionbar explanation, mirroring the beast line's wording

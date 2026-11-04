@@ -4,6 +4,9 @@
   "package": "org.bitwisemadness.pseudocore.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [],
+  "client": [
+    "ItemRendererShimmerMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

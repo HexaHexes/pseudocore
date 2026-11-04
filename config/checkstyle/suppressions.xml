@@ -7,7 +7,7 @@
     <suppress checks="RegexpMultiline" files="LightmansTradeGameTests.java" lines="95"/>
     <suppress checks="RegexpMultiline" files="TierCaptureConfigGameTests.java" lines="230"/>
     <suppress checks="RegexpMultiline" files="TooltipGatingGameTests.java" lines="247"/>
-    <suppress checks="RegexpMultiline" files="PseudocoreClientEvents.java" lines="39"/>
+    <suppress checks="RegexpMultiline" files="PseudocoreClientEvents.java" lines="40"/>
     <suppress checks="RegexpMultiline" files="PseudocoreTintHandler.java" lines="107"/>
     <suppress checks="RegexpMultiline" files="PseudocoreTintHandler.java" lines="119"/>
     <suppress checks="RegexpMultiline" files="PseudocoreConfig.java" lines="380"/>
