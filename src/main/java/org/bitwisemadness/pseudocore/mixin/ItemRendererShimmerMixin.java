@@ -42,14 +42,13 @@ public abstract class ItemRendererShimmerMixin {
                     target = "Lnet/minecraft/client/renderer/entity/ItemRenderer;renderModelLists(Lnet/minecraft/client/resources/model/BakedModel;Lnet/minecraft/world/item/ItemStack;IILcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;)V"
             )
     )
-    private void pseudocore$mobShimmer(BakedModel model, ItemStack stack, int combinedLight,
-                                       int combinedOverlay, PoseStack poseStack,
+    private void pseudocore$mobShimmer(ItemRenderer self, BakedModel model, ItemStack stack,
+                                       int combinedLight, int combinedOverlay, PoseStack poseStack,
                                        VertexConsumer buffer,
                                        @Local(argsOnly = true) MultiBufferSource bufferSource) {
-        // Post-merge `this` is the ItemRenderer; the Object bridge exists only
-        // so the standalone compile can see the target's method (mixins do not
-        // inherit it), and renderModelLists is public on the target.
-        ItemRenderer self = (ItemRenderer) (Object) this;
+        // The receiver is the redirected call's first argument; `this` alone
+        // fails apply-time validation (issue #168: unexpected argument type
+        // at index 0).
         self.renderModelLists(model, stack, combinedLight, combinedOverlay, poseStack, buffer);
         var shimmer = MobGlint.typeFor(stack);
         if (shimmer != null) {
