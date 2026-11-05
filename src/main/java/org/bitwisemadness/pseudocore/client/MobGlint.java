@@ -125,9 +125,11 @@ public final class MobGlint {
 
     /**
      * Vanilla's {@code glint} RenderType, re-pointed at the half-phase
-     * texturing shard: same shader, same enchanted-glint texture, same
-     * additive transparency and depth-equal composite - only the scroll
-     * phase and the draw-time colour differ.
+     * texturing shard: same shader, same enchanted-glint texture and the
+     * same additive transparency; the scroll phase, the draw-time colour
+     * and the depth test differ - LEQUAL rather than vanilla's EQUAL,
+     * because vanilla's ordering guarantees its base flushes first and
+     * our shared-builder switch does not (see the draw-site comment).
      */
     private static RenderType shimmerType(int color) {
         return RenderType.create(
@@ -141,7 +143,10 @@ public final class MobGlint {
                                 ItemRenderer.ENCHANTED_GLINT_ITEM, true, false))
                         .setWriteMaskState(RenderStateShard.COLOR_WRITE)
                         .setCullState(RenderStateShard.NO_CULL)
-                        .setDepthTestState(RenderStateShard.EQUAL_DEPTH_TEST)
+                        // LEQUAL not EQUAL (2026-11-05): vanilla's EQUAL relies on the base
+        // flushing first; when the pack's pipeline presents a farther stored
+        // depth at our draw, LEQUAL still passes - nearer occluders don't.
+        .setDepthTestState(RenderStateShard.LEQUAL_DEPTH_TEST)
                         .setTransparencyState(RenderStateShard.GLINT_TRANSPARENCY)
                         .setTexturingState(new RenderStateShard.TexturingStateShard(
                                 "pseudocore_mob_glint_texturing",
