@@ -4,13 +4,17 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
+import org.bitwisemadness.pseudocore.Pseudocore;
 import org.bitwisemadness.pseudocore.registry.ModDataComponents;
 import org.bitwisemadness.pseudocore.util.IafHornAccess;
 import org.joml.Matrix4f;
@@ -50,6 +54,13 @@ public final class MobGlint {
      */
     private static final Map<Integer, RenderType> TYPES = new HashMap<>();
 
+    /**
+     * Colours already logged (#171's follow-up): one line per emitted
+     * colour keeps the diagnostic bounded while proving - by its absence -
+     * that the redirect never reached this method at all.
+     */
+    private static final Set<Integer> LOGGED = new HashSet<>();
+
     private MobGlint() {
     }
 
@@ -62,7 +73,13 @@ public final class MobGlint {
         if (!isFilled(stack)) {
             return null;
         }
-        int color = shimmerColor(PseudocoreTintHandler.TINT.getColor(stack, 0));
+        int raw = PseudocoreTintHandler.TINT.getColor(stack, 0);
+        int color = shimmerColor(raw);
+        if (LOGGED.add(color)) {
+            Pseudocore.LOGGER.debug("Shimmer layer for {}: raw=0x{} emitted=0x{}",
+                    BuiltInRegistries.ITEM.getKey(stack.getItem()),
+                    Integer.toHexString(raw), Integer.toHexString(color));
+        }
         return TYPES.computeIfAbsent(color, MobGlint::shimmerType);
     }
 
