@@ -25,7 +25,9 @@ import org.joml.Matrix4f;
  * and the orb can never disagree - and the scroll sits half a cycle off
  * vanilla's two loops, so when a filled+enchanted core draws both layers
  * they alternate instead of muddying each other (#160's answer). Full
- * strength: the glint texture at the mob colour, undiminished.</p>
+ * strength: the glint texture at the mob colour, lifted only by the
+ * hue-preserving luminance floor so a dark palette colour still reads
+ * (#171).</p>
  *
  * <p>The phase lives where vanilla puts it - the texture matrix the glint
  * shader reads through {@code TextureMat} - reimplemented from
@@ -60,8 +62,42 @@ public final class MobGlint {
         if (!isFilled(stack)) {
             return null;
         }
-        int color = PseudocoreTintHandler.TINT.getColor(stack, 0);
+        int color = shimmerColor(PseudocoreTintHandler.TINT.getColor(stack, 0));
         return TYPES.computeIfAbsent(color, MobGlint::shimmerType);
+    }
+
+    /**
+     * The floor the emitted colour is lifted to (#171): the glint shader
+     * multiplies the art by this colour and the layer blends additively,
+     * so a raw mid-dark palette colour adds almost no light - the layer
+     * draws but reads as nothing (the brown Cattledeer report). Scaling
+     * all three channels together keeps the mob's hue; colours already
+     * at or above the floor pass through untouched, and the orb tint
+     * keeps the true colour - only the emitted light is lifted.
+     */
+    private static final int MIN_CHANNEL = 0xC0;
+
+    /**
+     * The emitted colour for a raw orb colour: scaled up - all channels
+     * together, so the hue survives - until the brightest channel reaches
+     * {@link #MIN_CHANNEL}. Pure black has no hue to keep and becomes the
+     * floor grey; everything at or above the floor is returned as-is.
+     */
+    private static int shimmerColor(int color) {
+        int red = color >> 16 & 255;
+        int green = color >> 8 & 255;
+        int blue = color & 255;
+        int max = Math.max(red, Math.max(green, blue));
+        if (max >= MIN_CHANNEL) {
+            return color;
+        }
+        if (max == 0) {
+            return MIN_CHANNEL << 16 | MIN_CHANNEL << 8 | MIN_CHANNEL;
+        }
+        float scale = (float) MIN_CHANNEL / max;
+        return Math.round(red * scale) << 16
+                | Math.round(green * scale) << 8
+                | Math.round(blue * scale);
     }
 
     /** Beast storage is CONTAINED_MOB; dragon storage is IaF's horn (#65). */
