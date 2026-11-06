@@ -179,8 +179,9 @@ dependencies {
     // compileOnly keeps it off the POM and the required list; testImplementation
     // feeds the #174 fixtures over core's registries and charge pipeline. The
     // pin lives here rather than in gradle.properties, which is version-bump only.
-    // Alpha.39 is the first build carrying #103's amount resolvers.
-    def abilityCoreVersion = '1.0.0-alpha.39'
+    // Alpha.42 is the first build with #110's refund contract (and #108's
+    // corrected XP deduction), which routed refunds consume.
+    def abilityCoreVersion = '1.0.0-alpha.42'
     compileOnly "org.bitwisemadness.abilitycore:ability_core:${abilityCoreVersion}"
     testImplementation "org.bitwisemadness.abilitycore:ability_core:${abilityCoreVersion}"
     // Local runs and the gametest server stage core as well: the pay_with_*
