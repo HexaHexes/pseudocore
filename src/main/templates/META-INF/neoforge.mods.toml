@@ -66,24 +66,33 @@ requiredMods=["iceandfire"]
     side="BOTH"
 
 # Tensura: optional. Enables EP display and ownership transfer on release.
+# Floor = 2.0.1.3, the version this repo compiles and gates against
+# (build.gradle) and the version the pack runs.
 [[dependencies.pseudocore]]
     modId="tensura"
     type="optional"
+    versionRange="[2.0.1.3,)"
     ordering="AFTER"
     side="BOTH"
 
 # ManasCore: optional (required by Tensura). Provides the storage API we read EP/owner through.
+# Floor = 4.0.0.2, the version this repo compiles and gates against and
+# the version the pack runs.
 [[dependencies.pseudocore]]
     modId="manascore"
     type="optional"
+    versionRange="[4.0.0.2,)"
     ordering="AFTER"
     side="BOTH"
 
 # Ice and Fire CE: optional. Provides the Dragon Horn whose release-path ownership
 # this addon makes transferable via the pseudocoreDragonOwnershipTransfer gamerule.
+# Floor = 2.0-beta.15 (the pack's build; Maven orders it below 2.1.4, the
+# dev/CI-staged build, so the floor admits both).
 [[dependencies.pseudocore]]
     modId="iceandfire"
     type="optional"
+    versionRange="[2.0-beta.15,)"
     ordering="AFTER"
     side="BOTH"
 
@@ -94,5 +103,17 @@ requiredMods=["iceandfire"]
     modId="mob_info_common"
     type="required"
     versionRange="[${mob_info_common_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Ability Core - optional (the #174 cost seam): the bridge gates every call
+# on ModList, so the addon behaves exactly as before without it. Floor =
+# alpha.42, the first build with #110's refund contract (and #108's
+# corrected XP deduction), which routed refunds consume - the same pin
+# build.gradle compiles and gates against.
+[[dependencies.pseudocore]]
+    modId="ability_core"
+    type="optional"
+    versionRange="[1.0.0-alpha.42,)"
     ordering="AFTER"
     side="BOTH"
