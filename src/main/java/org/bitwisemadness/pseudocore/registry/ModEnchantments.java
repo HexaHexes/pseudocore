@@ -13,10 +13,11 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import org.bitwisemadness.pseudocore.Pseudocore;
 
 /**
- * The five enchantments of the #159 family, by key, plus the item tag
- * they all apply to. 1.21 enchantments are datapack registry entries, so
- * "registration" here means naming the keys (the data ships from the
- * datagen provider) and reading levels back through the live registry.
+ * The nine enchantments of the #159 family plus the payment switch, by key,
+ * plus the item tag they all apply to. 1.21 enchantments are datapack
+ * registry entries, so "registration" here means naming the keys (the data
+ * ships from the datagen provider) and reading levels back through the live
+ * registry.
  *
  * <p>Ids follow the display names since #165, when the payment family
  * rotated with the split-by-default economy: a change here must travel
@@ -43,13 +44,30 @@ public final class ModEnchantments {
     /** Gate death-preserve: a core without it never preserves a dying mob. */
     public static final ResourceKey<Enchantment> PRESERVATION = key("preservation");
 
+    /** Pay with Health: the whole capture cost from the player's health, through Ability Core's pair. */
+    public static final ResourceKey<Enchantment> PAY_WITH_HEALTH = key("pay_with_health");
+
+    /** Pay with Hunger: the whole capture cost from the food bar, through Ability Core's pair. */
+    public static final ResourceKey<Enchantment> PAY_WITH_HUNGER = key("pay_with_hunger");
+
+    /** Pay with Experience: the whole capture cost from experience points, through Ability Core's pair. */
+    public static final ResourceKey<Enchantment> PAY_WITH_EXPERIENCE_POINTS = key("pay_with_experience_points");
+
+    /** Pay with Levels: the whole capture cost from experience levels, through Ability Core's pair. */
+    public static final ResourceKey<Enchantment> PAY_WITH_EXPERIENCE_LEVELS = key("pay_with_experience_levels");
+
     /** Every core of every line: beast, dragon and dragonsteel. */
     public static final TagKey<Item> CORES = TagKey.create(Registries.ITEM,
             ResourceLocation.fromNamespaceAndPath(Pseudocore.MOD_ID, "pseudocore_cores"));
 
-    /** All five keys, in description-guard order. */
+    /**
+     * All nine keys, in description-guard order. The four {@code pay_with_*}
+     * entries exist only while Ability Core is loaded (their JSON carries
+     * {@code neoforge:conditions}); the other five always ship.
+     */
     public static final List<ResourceKey<Enchantment>> ALL = List.of(
-            CORE_EFFICIENCY, WARRIORS_AURA, WIZARDS_MAGICULES, HUNTERS_BOON, PRESERVATION);
+            CORE_EFFICIENCY, WARRIORS_AURA, WIZARDS_MAGICULES, HUNTERS_BOON, PRESERVATION,
+            PAY_WITH_HEALTH, PAY_WITH_HUNGER, PAY_WITH_EXPERIENCE_POINTS, PAY_WITH_EXPERIENCE_LEVELS);
 
     private ModEnchantments() {
     }

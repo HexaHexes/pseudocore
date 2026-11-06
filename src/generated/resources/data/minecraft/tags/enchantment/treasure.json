@@ -19,6 +19,22 @@
     {
       "id": "pseudocore:preservation",
       "required": false
+    },
+    {
+      "id": "pseudocore:pay_with_health",
+      "required": false
+    },
+    {
+      "id": "pseudocore:pay_with_hunger",
+      "required": false
+    },
+    {
+      "id": "pseudocore:pay_with_experience_points",
+      "required": false
+    },
+    {
+      "id": "pseudocore:pay_with_experience_levels",
+      "required": false
     }
   ]
 }

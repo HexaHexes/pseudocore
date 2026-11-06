@@ -183,6 +183,11 @@ dependencies {
     def abilityCoreVersion = '1.0.0-alpha.39'
     compileOnly "org.bitwisemadness.abilitycore:ability_core:${abilityCoreVersion}"
     testImplementation "org.bitwisemadness.abilitycore:ability_core:${abilityCoreVersion}"
+    // Local runs and the gametest server stage core as well: the pay_with_*
+    // enchantments ship only while it is loaded (neoforge:conditions), so the
+    // condition-true path and the real consumer routing need it on the run
+    // classpath - the gametest asserts exactly that.
+    localRuntime "org.bitwisemadness.abilitycore:ability_core:${abilityCoreVersion}"
 
     manascoreModules 'curse.maven:manascore-619025:8022425'
 
