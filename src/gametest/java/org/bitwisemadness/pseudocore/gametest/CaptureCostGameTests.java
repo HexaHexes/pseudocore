@@ -24,11 +24,16 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import org.bitwisemadness.abilitycore.api.Affordability;
+import org.bitwisemadness.abilitycore.api.ResourceConsumer;
+import org.bitwisemadness.abilitycore.api.ResourceConsumers;
+import org.bitwisemadness.abilitycore.api.ResourceProviders;
 import org.bitwisemadness.pseudocore.Pseudocore;
 import org.bitwisemadness.pseudocore.config.PseudocoreConfig;
 import org.bitwisemadness.pseudocore.item.PseudocoreItem;
 import org.bitwisemadness.pseudocore.registry.ModDataComponents;
 import org.bitwisemadness.pseudocore.registry.ModEnchantments;
+import org.bitwisemadness.pseudocore.util.AbilityCoreBridge;
 import org.bitwisemadness.pseudocore.util.CaptureCostMath;
 import org.bitwisemadness.pseudocore.util.TensuraBridge;
 
@@ -231,6 +236,98 @@ public final class CaptureCostGameTests {
                     "wizards_magicules must leave AP untouched, got " + afterMagicule[0]);
         } finally {
             blacklist.set(original);
+        }
+
+        helper.succeed();
+    }
+
+    /**
+     * The pay_with_* family end to end: the enchantment ships only while
+     * Ability Core does (the JSON condition - the holder lookup throws
+     * otherwise, which is the condition-true proof), the charge routes
+     * through core's health pair at the mob's max HP, and a wallet that
+     * cannot cover it refuses with nothing consumed.
+     */
+    @GameTest(template = "test_area")
+    public static void payWithHealthRoutesTheChargeThroughItsCorePair(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("tensura")) {
+            helper.succeed();
+            return;
+        }
+        // The logged-in harness, not makeMockPlayer: tryCapture charges only
+        // for a ServerPlayer, and makeMockPlayer's anonymous Player never is.
+        var player = loggedInMockPlayer(helper);
+
+        var cow = helper.spawn(EntityType.COW, 1, 1, 1);
+        ItemStack paid = uncappedCore();
+        paid.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
+        paid.enchant(holder(helper, ModEnchantments.PAY_WITH_HEALTH), 1);
+
+        player.setHealth(20.0F);
+        check(PseudocoreItem.tryCapture(player, cow, paid) == InteractionResult.SUCCESS,
+                "a health payment must capture through Ability Core's health pair");
+        float expected = 20.0F - cow.getMaxHealth();
+        check(Math.abs(player.getHealth() - expected) < 0.01F,
+                "the wallet is the mob's max HP: expected " + expected + ", got " + player.getHealth());
+
+        var second = helper.spawn(EntityType.COW, 3, 1, 3);
+        ItemStack poorCore = uncappedCore();
+        poorCore.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
+        poorCore.enchant(holder(helper, ModEnchantments.PAY_WITH_HEALTH), 1);
+        player.setHealth(2.0F);
+        check(PseudocoreItem.tryCapture(player, second, poorCore) != InteractionResult.SUCCESS,
+                "a wallet that cannot cover the mob must refuse");
+        check(player.getHealth() == 2.0F, "a refused payment consumes nothing");
+        check(!poorCore.has(ModDataComponents.CONTAINED_MOB.get()),
+                "a refused capture stores nothing");
+
+        helper.succeed();
+    }
+
+    /**
+     * The warriors_aura retrofit: with the aura pair registered the payment
+     * routes through core's validate-then-charge and the native pool write
+     * never runs; without the pair (every other test here) it falls back to
+     * the native pools exactly as before. The fake pair is declared and
+     * removed inside the test, so the rotation test's native assertions
+     * stay order-independent.
+     */
+    @GameTest(template = "test_area")
+    public static void warriorsAuraRoutesThroughTheAuraPairWhenRegistered(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("tensura")) {
+            helper.succeed();
+            return;
+        }
+        var player = loggedInMockPlayer(helper);
+        double[] seen = {0.0D, -1.0D}; // checked amount, then charged amount (-1 = never)
+
+        ResourceProviders.declare(AbilityCoreBridge.AURA, (abilityId, payer, amount) -> {
+            seen[0] = amount;
+            return Affordability.sufficient(AbilityCoreBridge.AURA, amount);
+        });
+        ResourceConsumers.declare(AbilityCoreBridge.AURA, new ResourceConsumer() {
+            @Override
+            public void charge(ResourceLocation abilityId, ServerPlayer payer, Affordability snapshot) {
+                seen[1] = snapshot.amount();
+            }
+        });
+        try {
+            var cow = helper.spawn(EntityType.COW, 2, 1, 2);
+            ItemStack core = uncappedCore();
+            core.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
+            core.enchant(holder(helper, ModEnchantments.WARRIORS_AURA), 1);
+            TensuraBridge.writePools(player, HUGE_POOL, HUGE_POOL);
+
+            check(PseudocoreItem.tryCapture(player, cow, core) == InteractionResult.SUCCESS,
+                    "a capture must succeed with the aura pair registered");
+            check(seen[1] >= 0.0D,
+                    "warriors_aura must charge through the registered aura consumer");
+            double[] pools = TensuraBridge.readPools(player).orElseThrow();
+            check(pools[0] == HUGE_POOL && pools[1] == HUGE_POOL,
+                    "routing replaces the native pool write - both pools stay untouched");
+        } finally {
+            ResourceConsumers.remove(AbilityCoreBridge.AURA);
+            ResourceProviders.remove(AbilityCoreBridge.AURA);
         }
 
         helper.succeed();

@@ -10,8 +10,6 @@
     <suppress checks="RegexpMultiline" files="PseudocoreClientEvents.java" lines="40"/>
     <suppress checks="RegexpMultiline" files="PseudocoreTintHandler.java" lines="107"/>
     <suppress checks="RegexpMultiline" files="PseudocoreTintHandler.java" lines="119"/>
-    <suppress checks="RegexpMultiline" files="PseudocoreConfig.java" lines="380"/>
-    <suppress checks="RegexpMultiline" files="PseudocoreConfig.java" lines="393"/>
     <suppress checks="RegexpMultiline" files="PseudocoreEvents.java" lines="59"/>
     <suppress checks="RegexpMultiline" files="DragonPseudocoreItem.java" lines="59"/>
     <suppress checks="RegexpMultiline" files="DragonPseudocoreItem.java" lines="70"/>

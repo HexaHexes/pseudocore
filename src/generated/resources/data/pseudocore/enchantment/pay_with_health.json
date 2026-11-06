@@ -1,0 +1,27 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ability_core"
+    }
+  ],
+  "anvil_cost": 1,
+  "description": {
+    "translate": "enchantment.pseudocore.pay_with_health"
+  },
+  "effects": {},
+  "max_cost": {
+    "base": 15,
+    "per_level_above_first": 15
+  },
+  "max_level": 1,
+  "min_cost": {
+    "base": 1,
+    "per_level_above_first": 1
+  },
+  "slots": [
+    "any"
+  ],
+  "supported_items": "#pseudocore:pseudocore_cores",
+  "weight": 1
+}

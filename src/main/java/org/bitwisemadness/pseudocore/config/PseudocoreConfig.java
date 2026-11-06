@@ -11,6 +11,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
+import org.bitwisemadness.pseudocore.util.ScalingCurves;
 
 /**
  * Mod config, split by where the value has to be readable.
@@ -108,6 +109,16 @@ public final class PseudocoreConfig {
     private static final Set<String> TIER_KEYS =
             TIERS.stream().map(Tier::key).collect(Collectors.toUnmodifiableSet());
 
+    /**
+     * The payment enchantments a pack may re-curve, by id path (ids follow
+     * {@code ModEnchantments}; these are also the TOML keys, so they stay
+     * literals here). Declared before the spec build below, which reads it
+     * during class initialization.
+     */
+    private static final List<String> PAYMENT_ENCHANTMENTS = List.of(
+            "warriors_aura", "wizards_magicules", "pay_with_health", "pay_with_hunger",
+            "pay_with_experience_points", "pay_with_experience_levels");
+
     public static final Common COMMON;
     public static final ModConfigSpec COMMON_SPEC;
 
@@ -163,6 +174,35 @@ public final class PseudocoreConfig {
             return COMMON.captureCostXpPerMobHp.get();
         } catch (IllegalStateException notLoadedYet) {
             return org.bitwisemadness.pseudocore.util.PseudocoreCosts.DEFAULT_XP_PER_MOB_HP;
+        }
+    }
+
+    /**
+     * The reference where linear and quadratic payment curves meet: a mob
+     * of this scale costs the same under either shape. Fail-open to the
+     * default like every other accessor, so a pre-load read never invents
+     * a price.
+     */
+    public static double paymentCurveReference() {
+        try {
+            return COMMON.captureCostCurveReference.get();
+        } catch (IllegalStateException notLoadedYet) {
+            return ScalingCurves.DEFAULT_REFERENCE;
+        }
+    }
+
+    /**
+     * The configured curve for one payment enchantment (id path, e.g.
+     * {@code pay_with_health}): linear until a pack says otherwise. An
+     * unknown curve name degrades to linear with a warning at the price
+     * site - a typo must never refuse a capture.
+     */
+    public static String paymentCurve(String enchantmentPath) {
+        try {
+            var value = COMMON.paymentCurves.get(enchantmentPath);
+            return value == null ? ScalingCurves.LINEAR : value.get();
+        } catch (IllegalStateException notLoadedYet) {
+            return ScalingCurves.LINEAR;
         }
     }
 
@@ -351,6 +391,8 @@ public final class PseudocoreConfig {
         private final Map<String, TierSection> tiers;
         private final Map<String, DragonTierSection> dragonTiers;
         private final ModConfigSpec.IntValue captureCostXpPerMobHp;
+        private final ModConfigSpec.DoubleValue captureCostCurveReference;
+        private final Map<String, ModConfigSpec.ConfigValue<String>> paymentCurves;
 
         public Common(ModConfigSpec.Builder builder) {
             builder.push("pseudocore");
@@ -377,10 +419,9 @@ public final class PseudocoreConfig {
                             "iceandfire:ice_dragon",
                             "iceandfire:lightning_dragon",
 
-                            // Named encounter mobs. Not bosses (Tensura's Orc Disaster is in
-                            // the boss group below), but story-relevant enough that pocketing
-                            // them would skip the encounter: Tensura's orc ranks, goblin,
-                            // lizardman and three daemon ranks, and Mysticism's spirit wolf.
+                            // Named encounter mobs: pocketing them would skip a story
+                            // encounter - Tensura's orc/goblin/lizardman/daemon ranks
+                            // and Mysticism's spirit wolf (bosses are the group below).
                             "tensura:orc",
                             "tensura:orc_lord",
                             "tensura:goblin",
@@ -390,13 +431,9 @@ public final class PseudocoreConfig {
                             "tensura:lesser_daemon",
                             "mysticism:okami",
 
-                            // Bosses. Identified by carrying a ServerBossEvent, which is the
-                            // actual marker of a Minecraft boss rather than a name convention.
-                            // That test alone is not enough: L Ender's Cataclysm and Mowzie's
-                            // Mobs route their bars through a helper class instead, so their
-                            // mobs never reference the event themselves. Those came from Boss
-                            // Checklist's catalog, and every id below was checked against one
-                            // source or the other.
+                            // Bosses: a ServerBossEvent is the real marker, but L Ender's
+                            // Cataclysm and Mowzie's Mobs route their bars through helper
+                            // classes - those ids came from Boss Checklist's verified catalog.
                             "iceandfire:dread_queen",
                             "tensura:gazel_dwargo",
                             "tensura:hinata_sakaguchi",
@@ -558,6 +595,26 @@ public final class PseudocoreConfig {
                             "replaces it entirely. The core_efficiency enchantment discounts either",
                             "backend. #159.")
                     .defineInRange("xpPerMobHp", 5, 0, Integer.MAX_VALUE);
+            captureCostCurveReference = builder
+                    .comment(
+                            "Where linear and quadratic payment curves meet: a mob of this scale",
+                            "costs the same under either shape, so a quadratic wallet only diverges",
+                            "with size. This is also the pre-load fail-open default.")
+                    .defineInRange("curveReference", ScalingCurves.DEFAULT_REFERENCE, 0.1D, 1.0e9D);
+            builder.push("paymentCurves");
+            Map<String, ModConfigSpec.ConfigValue<String>> curves = new LinkedHashMap<>();
+            for (String enchantment : PAYMENT_ENCHANTMENTS) {
+                curves.put(enchantment, builder
+                        .comment(
+                                "The scaling curve for the '" + enchantment + "' payment: 'linear'",
+                                "(straight proportion, the default) or 'quadratic' (x*x / curveReference -",
+                                "cheaper below the reference, steeper above it). Custom names are curves",
+                                "an addon declared at construction; an unknown name logs a warning and",
+                                "prices linearly.")
+                        .define(enchantment, ScalingCurves.LINEAR));
+            }
+            paymentCurves = Collections.unmodifiableMap(curves);
+            builder.pop();
             builder.pop();
             builder.pop();
         }
