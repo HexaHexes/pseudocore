@@ -59,6 +59,19 @@ repositories {
             password = System.getenv('PACKAGE_READ_TOKEN') ?: System.getenv('GITHUB_TOKEN') ?: project.findProperty('gpr.key')
         }
     }
+
+    // Ability Core, from its own GitHub Packages repository (the
+    // docs/api-surface.md "Dependency coordinates" pattern). Same auth story
+    // as the block above: PACKAGE_READ_TOKEN in CI, gpr.user/gpr.key locally.
+    maven {
+        name = 'AbilityCorePackages'
+        url = uri('https://maven.pkg.github.com/HexaHexes/ability-core')
+        credentials {
+            username = System.getenv('GITHUB_ACTOR') ?: project.findProperty('gpr.user')
+            password = System.getenv('PACKAGE_READ_TOKEN') ?: System.getenv('GITHUB_TOKEN') ?: project.findProperty('gpr.key')
+        }
+        content { includeGroup('org.bitwisemadness.abilitycore') }
+    }
 }
 
 base {
@@ -105,6 +118,11 @@ neoForge {
             logLevel = org.slf4j.event.Level.DEBUG
         }
     }
+
+    // The #174 cost fixtures drive core's registries and charge pipeline, so
+    // the test source set needs MC/DFU classes (the template's own tests
+    // avoided MC, which is why this was never wired).
+    addModdingDependenciesTo sourceSets.test
 
     mods {
         "${mod_id}" {
@@ -155,6 +173,16 @@ dependencies {
     // Packages registry. Never packaged - the library ships as its own mod.
     compileOnly "org.bitwisemadness.mobinfocommon:mob_info_common:${mob_info_common_version}"
     runtimeOnly "org.bitwisemadness.mobinfocommon:mob_info_common:${mob_info_common_version}"
+
+    // Ability Core: OPTIONAL (the #174 cost seam - the bridge gates every
+    // call on ModList, so the mod behaves exactly as before without it).
+    // compileOnly keeps it off the POM and the required list; testImplementation
+    // feeds the #174 fixtures over core's registries and charge pipeline. The
+    // pin lives here rather than in gradle.properties, which is version-bump only.
+    // Alpha.39 is the first build carrying #103's amount resolvers.
+    def abilityCoreVersion = '1.0.0-alpha.39'
+    compileOnly "org.bitwisemadness.abilitycore:ability_core:${abilityCoreVersion}"
+    testImplementation "org.bitwisemadness.abilitycore:ability_core:${abilityCoreVersion}"
 
     manascoreModules 'curse.maven:manascore-619025:8022425'
 

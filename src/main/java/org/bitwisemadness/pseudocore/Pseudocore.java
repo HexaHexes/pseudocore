@@ -12,6 +12,7 @@ import org.bitwisemadness.pseudocore.registry.ModDataComponents;
 import org.bitwisemadness.pseudocore.registry.ModGameRules;
 import org.bitwisemadness.pseudocore.registry.ModItems;
 import org.bitwisemadness.pseudocore.registry.ModRecipes;
+import org.bitwisemadness.pseudocore.util.AbilityCoreBridge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +33,11 @@ public final class Pseudocore {
         container.registerConfig(ModConfig.Type.CLIENT, PseudocoreConfig.CLIENT_SPEC);
 
         modBus.addListener(this::onCommonSetup);
+
+        // #174: the payment picker declares at construction - core's timing
+        // contract puts it before RegisterEvent, and seamUsable() keeps the
+        // optional dependency optional (absent or old core = dormant seam).
+        AbilityCoreBridge.declareStrategies();
     }
 
     private void onCommonSetup(FMLCommonSetupEvent event) {
