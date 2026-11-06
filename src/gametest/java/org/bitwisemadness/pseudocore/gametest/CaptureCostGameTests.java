@@ -35,6 +35,7 @@ import org.bitwisemadness.pseudocore.registry.ModDataComponents;
 import org.bitwisemadness.pseudocore.registry.ModEnchantments;
 import org.bitwisemadness.pseudocore.util.AbilityCoreBridge;
 import org.bitwisemadness.pseudocore.util.CaptureCostMath;
+import org.bitwisemadness.pseudocore.util.PseudocoreCosts;
 import org.bitwisemadness.pseudocore.util.TensuraBridge;
 
 /**
@@ -269,6 +270,13 @@ public final class CaptureCostGameTests {
         float expected = 20.0F - cow.getMaxHealth();
         check(Math.abs(player.getHealth() - expected) < 0.01F,
                 "the wallet is the mob's max HP: expected " + expected + ", got " + player.getHealth());
+
+        // The refund leg: the dragon path's exact call, handing core's #110
+        // contract the snapshot the charge stashed - the pair's owner gives
+        // it back, so the pools end where they started.
+        PseudocoreCosts.refund(player, cow, paid);
+        check(player.getHealth() == 20.0F,
+                "the charged snapshot must come back through core's refund, got " + player.getHealth());
 
         var second = helper.spawn(EntityType.COW, 3, 1, 3);
         ItemStack poorCore = uncappedCore();

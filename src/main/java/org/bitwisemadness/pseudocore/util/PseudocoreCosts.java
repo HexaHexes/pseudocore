@@ -42,9 +42,9 @@ import org.bitwisemadness.pseudocore.registry.ModEnchantments;
  * sits behind {@link AbilityCoreBridge#seamUsable()}, so no core class
  * is touched when the library is absent - and without it the
  * pay_with_* enchantments do not ship at all (their JSON conditions).
- * Foreign pairs the charge can route to but not invert refund through
- * the native mirrors only while they are ours; ability-core#107's refund
- * contract covers the rest.</p>
+ * Foreign pairs the charge can route to invert through core's refund
+ * contract (#110): the exact charged snapshot goes back to the pair's
+ * own owner, with the local mirrors kept only as core's fallback.</p>
  *
  * <p>Nothing here throws: an unreadable pool, a missing enchantment or a
  * mob without EP degrade to a zero cost rather than a refusal, because
@@ -67,6 +67,9 @@ public final class PseudocoreCosts {
     /** What routed payments pass to core's pair as their origin (diagnostics only). */
     private static final ResourceLocation PAYMENT_ID =
             ResourceLocation.fromNamespaceAndPath(Pseudocore.MOD_ID, "capture");
+
+    /** The snapshot this thread last charged, handed to core's refund (#110). */
+    private static final ThreadLocal<Affordability> LAST_CHARGED = new ThreadLocal<>();
 
     private PseudocoreCosts() {
     }
@@ -233,6 +236,10 @@ public final class PseudocoreCosts {
         if (verdict == null || verdict.state() != Affordability.State.SUFFICIENT) {
             return Optional.of(insufficient(resource, amount));
         }
+        // The exact snapshot a later refund hands back (core's #110 contract
+        // takes the charged snapshot, never a recomputed amount) - charge and
+        // refund run as one synchronous pair on this thread.
+        LAST_CHARGED.set(verdict);
         consumer.charge(PAYMENT_ID, player, verdict);
         return Optional.empty();
     }
@@ -399,16 +406,23 @@ public final class PseudocoreCosts {
     }
 
     /**
-     * Give back a routed charge symmetrically: the pool pair writes the
-     * same Tensura pools its consumer writes, and the four core wallets
-     * mirror core's own consumer arithmetic - health restored exactly,
-     * integral pools refunded as the ceil() its deductIntegral charged
-     * (the pre-charge provider check guarantees the deduction never hit
-     * the floor, so the mirror is exact). Foreign pairs this cannot
-     * mirror are ability-core#107's refund contract to own.
+     * Give back a routed charge: first through core's refund contract
+     * (#110 - the exact charged snapshot, inverted by the pair's own
+     * owner, which is the only correct answer for a foreign pair), and
+     * only when core answers false (no consumer, not refundable, threw)
+     * through the local mirrors - the pool pair writes the same Tensura
+     * pools its consumer writes, the four core wallets mirror core's
+     * own arithmetic for a pre-refund-API core. The pre-charge provider
+     * check guarantees no floor was hit, so the mirrors are exact.
      */
     private static void refundRouted(ServerPlayer player, LivingEntity mob, String resource,
                                      String curve, int reduction) {
+        Affordability charged = LAST_CHARGED.get();
+        LAST_CHARGED.remove();
+        if (charged != null && resource.equals(charged.resourceId())
+                && ResourceConsumers.refund(PAYMENT_ID, player, charged)) {
+            return;
+        }
         if (isPoolPair(resource)) {
             var pools = TensuraBridge.readPools(player);
             if (pools.isEmpty()) {
