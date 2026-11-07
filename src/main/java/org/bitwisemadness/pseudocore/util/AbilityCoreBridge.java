@@ -33,6 +33,14 @@ import org.bitwisemadness.pseudocore.registry.ModEnchantments;
  * final. Without Ability Core there is no registration path at all, so an
  * action carries <b>no</b> costs - never an XP placeholder (the #174
  * ruling).</p>
+ *
+ * <p>Menu visibility (ability-core #124): Pseudocore registers no
+ * abilities of its own today, so there is nothing to declare here - the
+ * contract's default (listed) stands by construction. Its abilities'
+ * siblings live in pseudocore-curios, whose press declares never-visible
+ * (exclusive to the curios bar); when Pseudocore gains an ability, its
+ * visibility declaration lands beside this bridge's other setup-time
+ * declarations.</p>
  */
 public final class AbilityCoreBridge {
 
