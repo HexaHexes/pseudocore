@@ -109,6 +109,19 @@ public final class TooltipHelper {
     }
 
     /**
+     * The Payment line (#186): the wallet the next capture or recall charge
+     * will draw from, resolved by {@link PseudocoreCosts#paymentValue} - the
+     * same routing the charge itself takes, so the tooltip can never promise
+     * a resource the charge would not take. Shown on empty and filled cores
+     * alike: the empty one is where the capture is about to be paid for.
+     */
+    public static void addPaymentLine(List<Component> tooltip, ItemStack stack,
+                                      HolderLookup.Provider registries) {
+        tooltip.add(line("Payment", PseudocoreCosts.paymentValue(registries, stack),
+                ChatFormatting.GOLD));
+    }
+
+    /**
      * Whether this viewer may see the Tensura-sourced facts on a tooltip - the
      * EP line and the Tensura-recorded owner.
      *

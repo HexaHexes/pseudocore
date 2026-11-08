@@ -419,9 +419,13 @@ public class PseudocoreItem extends Item {
             tooltip.add(Component.literal("Empty").withStyle(ChatFormatting.DARK_GRAY));
             tooltip.add(Component.literal("Right-click a mob to capture it.")
                     .withStyle(ChatFormatting.DARK_GRAY));
+            // Before the caps: what the capture costs reads before the
+            // fine print about what it may hold (#186).
+            TooltipHelper.addPaymentLine(tooltip, stack, context.registries());
             TooltipHelper.addBeastCapLines(tooltip, this);
             return;
         }
         TooltipHelper.addLines(tooltip, comp.entityType(), comp.entityData(), context.registries());
+        TooltipHelper.addPaymentLine(tooltip, stack, context.registries());
     }
 }

@@ -21,6 +21,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import org.bitwisemadness.pseudocore.config.PseudocoreConfig;
+import org.bitwisemadness.pseudocore.item.DragonPseudocoreItem;
 import org.bitwisemadness.pseudocore.registry.ModGameRules;
 import org.bitwisemadness.pseudocore.util.IafHornAccess;
 import org.bitwisemadness.pseudocore.util.TooltipHelper;
@@ -54,7 +55,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Pseudocore (Name, Race, Owner, Health, EP) followed by IaF's own Gender and
  * Stage/Days lines. Replacing rather than appending is what lets us control the
  * ordering; the cost is coupling to IaF's lang keys and AgeTicks bands, both
- * handled in {@link TooltipHelper}.</p>
+ * handled in {@link TooltipHelper}. Dragon pseudocore tiers close with the
+ * Payment line (#186); the plain horn never charges this mod's economy and
+ * never shows one.</p>
  *
  * <p>Both hooks consult {@code iceAndFireIntegration} (in
  * {@code pseudocore-common.toml}) when they run, so switching the integration
@@ -206,6 +209,12 @@ public abstract class DragonHornItemMixin {
             // item in the pack with a blank tooltip. Dragon pseudocores append
             // the caps their tier enforces.
             TooltipHelper.addEmptyDragonLines(tooltip, stack);
+            // The Payment line is ours only (#186): the plain IaF horn
+            // captures through IaF's own code and never charges this
+            // mod's economy, so it must never advertise a wallet.
+            if (stack.getItem() instanceof DragonPseudocoreItem) {
+                TooltipHelper.addPaymentLine(tooltip, stack, context.registries());
+            }
             cir.cancel();
             return;
         }
@@ -221,9 +230,13 @@ public abstract class DragonHornItemMixin {
         }
 
         // Our block first - identical to the Pseudocore's - then IaF's own two
-        // lines, so both horns read the same at a glance.
+        // lines, so both horns read the same at a glance; our tiers close with
+        // the Payment line (#186), the plain horn with IaF's stage line.
         TooltipHelper.addLines(tooltip, typeId, data, context.registries());
         TooltipHelper.addDragonLines(tooltip, data);
+        if (stack.getItem() instanceof DragonPseudocoreItem) {
+            TooltipHelper.addPaymentLine(tooltip, stack, context.registries());
+        }
 
         cir.cancel();
     }
