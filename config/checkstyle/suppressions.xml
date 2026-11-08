@@ -16,14 +16,14 @@
     <suppress checks="RegexpMultiline" files="PseudocoreItem.java" lines="88"/>
     <suppress checks="RegexpMultiline" files="PseudocoreItem.java" lines="119"/>
     <suppress checks="RegexpMultiline" files="PseudocoreItem.java" lines="348"/>
-    <suppress checks="RegexpMultiline" files="DragonHornItemMixin.java" lines="107"/>
-    <suppress checks="RegexpMultiline" files="DragonHornItemMixin.java" lines="134"/>
-    <suppress checks="RegexpMultiline" files="DragonHornItemMixin.java" lines="204"/>
+    <suppress checks="RegexpMultiline" files="DragonHornItemMixin.java" lines="110"/>
+    <suppress checks="RegexpMultiline" files="DragonHornItemMixin.java" lines="137"/>
+    <suppress checks="RegexpMultiline" files="DragonHornItemMixin.java" lines="207"/>
     <suppress checks="RegexpMultiline" files="IafMixinPlugin.java" lines="47"/>
     <suppress checks="RegexpMultiline" files="ItemStackRarityMixin.java" lines="43"/>
     <suppress checks="RegexpMultiline" files="OrbColors.java" lines="103"/>
     <suppress checks="RegexpMultiline" files="TooltipHelper.java" lines="74"/>
     <suppress checks="RegexpMultiline" files="TooltipHelper.java" lines="98"/>
-    <suppress checks="RegexpMultiline" files="TooltipHelper.java" lines="170"/>
-    <suppress checks="RegexpMultiline" files="TooltipHelper.java" lines="203"/>
+    <suppress checks="RegexpMultiline" files="TooltipHelper.java" lines="183"/>
+    <suppress checks="RegexpMultiline" files="TooltipHelper.java" lines="216"/>
 </suppressions>

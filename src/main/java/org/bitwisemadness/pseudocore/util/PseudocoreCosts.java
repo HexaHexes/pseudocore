@@ -312,6 +312,52 @@ public final class PseudocoreCosts {
         return Character.toUpperCase(path.charAt(0)) + path.substring(1);
     }
 
+    /**
+     * The wallet the next charge will draw from, as the tooltip's Payment
+     * value (#186): the same branch structure as {@link #charge} - the
+     * routed payment's wallet first, then the native answer (the pool
+     * split, or experience points without Tensura) - so the description
+     * can never name a resource the charge would not take. Delegates to
+     * {@link #routedResource} for the routed half, so charge and tooltip
+     * cannot drift apart.
+     */
+    static Component paymentValue(HolderLookup.Provider registries, ItemStack core) {
+        String routed = routedResource(registries, core);
+        if (routed != null) {
+            if (AbilityCoreBridge.AURA.equals(routed)) {
+                return Component.translatable("pseudocore.tooltip.payment.aura");
+            }
+            if (AbilityCoreBridge.MAGICULE.equals(routed)) {
+                return Component.translatable("pseudocore.tooltip.payment.magicule");
+            }
+            if (BuiltinResources.HEALTH.equals(routed)) {
+                return Component.translatable("pseudocore.tooltip.payment.health");
+            }
+            if (BuiltinResources.HUNGER.equals(routed)) {
+                return Component.translatable("pseudocore.tooltip.payment.hunger");
+            }
+            if (BuiltinResources.EXPERIENCE_LEVELS.equals(routed)) {
+                return Component.translatable("pseudocore.tooltip.payment.levels");
+            }
+            // Points: the fourth wallet, the only one routedResource can
+            // still be holding at this point.
+            return Component.translatable("pseudocore.tooltip.payment.xp");
+        }
+        if (!TensuraBridge.isLoaded()) {
+            // The XP fallback is the native wallet without Tensura - the
+            // enchantments cannot route what no pool pair can hold.
+            return Component.translatable("pseudocore.tooltip.payment.xp");
+        }
+        // The native pool path: shares() decides, aura first (#165).
+        if (ModEnchantments.has(registries, core, ModEnchantments.WARRIORS_AURA)) {
+            return Component.translatable("pseudocore.tooltip.payment.aura");
+        }
+        if (ModEnchantments.has(registries, core, ModEnchantments.WIZARDS_MAGICULES)) {
+            return Component.translatable("pseudocore.tooltip.payment.magicule");
+        }
+        return Component.translatable("pseudocore.tooltip.payment.split");
+    }
+
     /** XP points, never levels: total points checked, then deducted. */
     private static Optional<Component> chargeXp(ServerPlayer player, LivingEntity mob, int reduction) {
         long cost = xpCost(mob.getMaxHealth(), PseudocoreConfig.captureCostXpPerMobHp(), reduction);
