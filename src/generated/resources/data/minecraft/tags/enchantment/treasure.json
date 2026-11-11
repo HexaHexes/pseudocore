@@ -21,19 +21,15 @@
       "required": false
     },
     {
-      "id": "pseudocore:pay_with_health",
+      "id": "pseudocore:pranas_breath",
       "required": false
     },
     {
-      "id": "pseudocore:pay_with_hunger",
+      "id": "pseudocore:gourmets_hunger",
       "required": false
     },
     {
-      "id": "pseudocore:pay_with_experience_points",
-      "required": false
-    },
-    {
-      "id": "pseudocore:pay_with_experience_levels",
+      "id": "pseudocore:experienceds_teachings",
       "required": false
     }
   ]

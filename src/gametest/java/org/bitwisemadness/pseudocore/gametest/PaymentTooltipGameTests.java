@@ -30,7 +30,7 @@ import org.bitwisemadness.pseudocore.util.TensuraBridge;
 /**
  * The Payment line (#186): the tooltip names the wallet the next charge
  * will draw from, resolved through the same routing the charge itself
- * takes - a pay_with_* switch its wallet, warriors_aura the aura pool,
+ * takes - a payment switch its wallet, warriors_aura the aura pool,
  * the native split or XP fallback otherwise.
  *
  * <p>Every test drives the REAL {@code appendHoverText} through
@@ -118,22 +118,22 @@ public final class PaymentTooltipGameTests {
     }
 
     /**
-     * pay_with_health outranks the pool pair (#174's precedence), and the
+     * pranas_breath outranks the pool pair (#174's precedence), and the
      * enchantment ships only while Ability Core's conditions hold - without
      * it there is no switch to route, which the default test pins instead.
      */
     @GameTest(template = "test_area")
-    public static void payWithHealthNamesHealth(GameTestHelper helper) {
+    public static void pranasBreathNamesHealth(GameTestHelper helper) {
         var registries = helper.getLevel().registryAccess();
         if (registries.lookupOrThrow(Registries.ENCHANTMENT)
-                .get(ModEnchantments.PAY_WITH_HEALTH).isEmpty()) {
+                .get(ModEnchantments.PRANAS_BREATH).isEmpty()) {
             helper.succeed();
             return;
         }
         ItemStack stack = new ItemStack(ModItems.COPPER_PSEUDOCORE.get());
-        stack.enchant(holder(helper, ModEnchantments.PAY_WITH_HEALTH), 1);
+        stack.enchant(holder(helper, ModEnchantments.PRANAS_BREATH), 1);
         check(HEALTH.equals(paymentKey(helper, stack)),
-                "pay_with_health must name Health as the wallet, got "
+                "pranas_breath must name Health as the wallet, got "
                         + paymentKey(helper, stack));
         helper.succeed();
     }
