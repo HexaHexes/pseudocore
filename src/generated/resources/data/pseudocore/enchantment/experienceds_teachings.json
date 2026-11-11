@@ -7,9 +7,10 @@
   ],
   "anvil_cost": 1,
   "description": {
-    "translate": "enchantment.pseudocore.pay_with_hunger"
+    "translate": "enchantment.pseudocore.experienceds_teachings"
   },
   "effects": {},
+  "exclusive_set": "#pseudocore:exclusive_set/payment",
   "max_cost": {
     "base": 15,
     "per_level_above_first": 15

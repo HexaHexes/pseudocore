@@ -31,8 +31,7 @@ class EnchantmentDescriptionsTest {
 
     private static final List<String> ENCHANTMENTS = List.of(
             "core_efficiency", "warriors_aura", "wizards_magicules", "hunters_boon", "preservation",
-            "pay_with_health", "pay_with_hunger", "pay_with_experience_points",
-            "pay_with_experience_levels");
+            "pranas_breath", "gourmets_hunger", "experienceds_teachings");
 
     /** The multi-level one: per-level keys only, never a plain shadow (#165). */
     private static final String REDUCTION = "core_efficiency";

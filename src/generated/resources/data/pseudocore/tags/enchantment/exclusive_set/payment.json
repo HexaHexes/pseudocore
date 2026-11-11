@@ -1,0 +1,24 @@
+{
+  "values": [
+    {
+      "id": "pseudocore:warriors_aura",
+      "required": false
+    },
+    {
+      "id": "pseudocore:wizards_magicules",
+      "required": false
+    },
+    {
+      "id": "pseudocore:pranas_breath",
+      "required": false
+    },
+    {
+      "id": "pseudocore:gourmets_hunger",
+      "required": false
+    },
+    {
+      "id": "pseudocore:experienceds_teachings",
+      "required": false
+    }
+  ]
+}

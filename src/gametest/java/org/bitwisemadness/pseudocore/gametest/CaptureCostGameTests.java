@@ -243,14 +243,14 @@ public final class CaptureCostGameTests {
     }
 
     /**
-     * The pay_with_* family end to end: the enchantment ships only while
+     * The payment-switch family end to end: the enchantment ships only while
      * Ability Core does (the JSON condition - the holder lookup throws
      * otherwise, which is the condition-true proof), the charge routes
      * through core's health pair at the mob's max HP, and a wallet that
      * cannot cover it refuses with nothing consumed.
      */
     @GameTest(template = "test_area")
-    public static void payWithHealthRoutesTheChargeThroughItsCorePair(GameTestHelper helper) {
+    public static void pranasBreathRoutesTheChargeThroughItsCorePair(GameTestHelper helper) {
         if (!ModList.get().isLoaded("tensura")) {
             helper.succeed();
             return;
@@ -262,7 +262,7 @@ public final class CaptureCostGameTests {
         var cow = helper.spawn(EntityType.COW, 1, 1, 1);
         ItemStack paid = uncappedCore();
         paid.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
-        paid.enchant(holder(helper, ModEnchantments.PAY_WITH_HEALTH), 1);
+        paid.enchant(holder(helper, ModEnchantments.PRANAS_BREATH), 1);
 
         player.setHealth(20.0F);
         check(PseudocoreItem.tryCapture(player, cow, paid) == InteractionResult.SUCCESS,
@@ -281,7 +281,7 @@ public final class CaptureCostGameTests {
         var second = helper.spawn(EntityType.COW, 3, 1, 3);
         ItemStack poorCore = uncappedCore();
         poorCore.enchant(holder(helper, ModEnchantments.HUNTERS_BOON), 1);
-        poorCore.enchant(holder(helper, ModEnchantments.PAY_WITH_HEALTH), 1);
+        poorCore.enchant(holder(helper, ModEnchantments.PRANAS_BREATH), 1);
         player.setHealth(2.0F);
         check(PseudocoreItem.tryCapture(player, second, poorCore) != InteractionResult.SUCCESS,
                 "a wallet that cannot cover the mob must refuse");

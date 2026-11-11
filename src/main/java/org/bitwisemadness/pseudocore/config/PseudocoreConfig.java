@@ -116,8 +116,8 @@ public final class PseudocoreConfig {
      * during class initialization.
      */
     private static final List<String> PAYMENT_ENCHANTMENTS = List.of(
-            "warriors_aura", "wizards_magicules", "pay_with_health", "pay_with_hunger",
-            "pay_with_experience_points", "pay_with_experience_levels");
+            "warriors_aura", "wizards_magicules", "pranas_breath", "gourmets_hunger",
+            "experienceds_teachings");
 
     public static final Common COMMON;
     public static final ModConfigSpec COMMON_SPEC;
@@ -193,7 +193,7 @@ public final class PseudocoreConfig {
 
     /**
      * The configured curve for one payment enchantment (id path, e.g.
-     * {@code pay_with_health}): linear until a pack says otherwise. An
+     * {@code pranas_breath}): linear until a pack says otherwise. An
      * unknown curve name degrades to linear with a warning at the price
      * site - a typo must never refuse a capture.
      */
