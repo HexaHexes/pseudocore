@@ -12,10 +12,10 @@ import net.minecraft.data.PackOutput;
 import org.bitwisemadness.pseudocore.Pseudocore;
 
 /**
- * The nine enchantments of the #159 family, as datapack registry data
+ * The eight enchantments of the #159 family, as datapack registry data
  * (1.21 enchantments live in {@code data/<ns>/enchantment/*.json}).
  *
- * <p>All nine are treasure-only: {@code supported_items} is the cores tag,
+ * <p>All eight are treasure-only: {@code supported_items} is the cores tag,
  * they carry {@code weight}/costs sane for the table but never enter it
  * ({@code minecraft:in_enchanting_table} never lists them), and
  * {@code effects} is empty on purpose - every behaviour is implemented in
@@ -24,7 +24,7 @@ import org.bitwisemadness.pseudocore.Pseudocore;
  * {@code core_efficiency} enchantment's six levels are therefore described
  * by the Enchantment Descriptions keys shipped in the lang file.</p>
  *
- * <p>The four {@code pay_with_*} payment switches carry
+ * <p>The three payment switches carry
  * {@code neoforge:conditions: mod_loaded ability_core}: they name a core
  * resource pair, so they exist exactly when Ability Core does
  * ({@code RegistryDataLoader} evaluates the conditions at datapack load).
@@ -36,16 +36,23 @@ import org.bitwisemadness.pseudocore.Pseudocore;
  */
 public final class PseudocoreEnchantmentProvider implements DataProvider {
 
-    /** The nine enchantments, by id and level cap (#159, ids per #165). */
+    /** The eight enchantments, by id and level cap (#159, ids per #165). */
     static final List<String> ENCHANTMENTS = List.of(
             "core_efficiency", "warriors_aura", "wizards_magicules", "hunters_boon", "preservation",
-            "pay_with_health", "pay_with_hunger", "pay_with_experience_points",
-            "pay_with_experience_levels");
+            "pranas_breath", "gourmets_hunger", "experienceds_teachings");
 
     /** The payment switches that exist only while Ability Core does. */
     private static final List<String> CORE_GATED = List.of(
-            "pay_with_health", "pay_with_hunger", "pay_with_experience_points",
-            "pay_with_experience_levels");
+            "pranas_breath", "gourmets_hunger", "experienceds_teachings");
+
+    /**
+     * The wallet switches (mirror of {@code ModEnchantments.WALLETS}): each
+     * claims the whole cost for one resource, so exactly one may rule a core
+     * - they all join the shared exclusive set the anvil consults.
+     */
+    private static final List<String> WALLETS = List.of(
+            "warriors_aura", "wizards_magicules", "pranas_breath", "gourmets_hunger",
+            "experienceds_teachings");
 
     private static final int CORE_EFFICIENCY_LEVELS = 6;
 
@@ -79,6 +86,13 @@ public final class PseudocoreEnchantmentProvider implements DataProvider {
             maxCost.addProperty("per_level_above_first", 15);
             enchantment.add("max_cost", maxCost);
             enchantment.addProperty("anvil_cost", 1);
+
+            if (WALLETS.contains(id)) {
+                // One wallet per core: this is the same data field vanilla's
+                // anvil reads before it merges a second payment switch in.
+                enchantment.addProperty("exclusive_set",
+                        "#" + Pseudocore.MOD_ID + ":exclusive_set/payment");
+            }
 
             JsonArray slots = new JsonArray();
             slots.add("any");

@@ -30,7 +30,7 @@ import org.bitwisemadness.pseudocore.registry.ModEnchantments;
  * while the pool pair stays Tensura-only. Release and the clear gesture
  * never call this class.</p>
  *
- * <p><b>Payment routing (the pay_with_* family):</b> a payment
+ * <p><b>Payment routing (the payment-switch family):</b> a payment
  * enchantment switches the <em>wallet</em> while the price stays the
  * reduction-scaled cost - the charge then runs through Ability Core's
  * provider/consumer pair (validate-then-charge), falling back to the
@@ -40,8 +40,8 @@ import org.bitwisemadness.pseudocore.registry.ModEnchantments;
  * custom types declarable), bent into the mob scale before the wallet's
  * factor and the reduction apply. Every core query
  * sits behind {@link AbilityCoreBridge#seamUsable()}, so no core class
- * is touched when the library is absent - and without it the
- * pay_with_* enchantments do not ship at all (their JSON conditions).
+ * is touched when the library is absent - and without it the payment
+ * switches do not ship at all (their JSON conditions).
  * Foreign pairs the charge can route to invert through core's refund
  * contract (#110): the exact charged snapshot goes back to the pair's
  * own owner, with the local mirrors kept only as core's fallback.</p>
@@ -61,7 +61,7 @@ public final class PseudocoreCosts {
     /** The XP backend's default per-HP multiplier (#159), also the config default. */
     public static final int DEFAULT_XP_PER_MOB_HP = CaptureCostMath.DEFAULT_XP_PER_MOB_HP;
 
-    /** One payment level per five points of the mob's health (the levels wallet). */
+    /** One payment level per five points of the mob's health (the levels route). */
     private static final double MOB_HP_PER_LEVEL = 5.0D;
 
     /** What routed payments pass to core's pair as their origin (diagnostics only). */
@@ -122,17 +122,14 @@ public final class PseudocoreCosts {
      * core - so every default price keeps today's straight proportion.
      */
     private static String curveFor(HolderLookup.Provider registries, ItemStack core) {
-        if (ModEnchantments.has(registries, core, ModEnchantments.PAY_WITH_HEALTH)) {
-            return PseudocoreConfig.paymentCurve("pay_with_health");
+        if (ModEnchantments.has(registries, core, ModEnchantments.PRANAS_BREATH)) {
+            return PseudocoreConfig.paymentCurve("pranas_breath");
         }
-        if (ModEnchantments.has(registries, core, ModEnchantments.PAY_WITH_HUNGER)) {
-            return PseudocoreConfig.paymentCurve("pay_with_hunger");
+        if (ModEnchantments.has(registries, core, ModEnchantments.GOURMETS_HUNGER)) {
+            return PseudocoreConfig.paymentCurve("gourmets_hunger");
         }
-        if (ModEnchantments.has(registries, core, ModEnchantments.PAY_WITH_EXPERIENCE_POINTS)) {
-            return PseudocoreConfig.paymentCurve("pay_with_experience_points");
-        }
-        if (ModEnchantments.has(registries, core, ModEnchantments.PAY_WITH_EXPERIENCE_LEVELS)) {
-            return PseudocoreConfig.paymentCurve("pay_with_experience_levels");
+        if (ModEnchantments.has(registries, core, ModEnchantments.EXPERIENCEDS_TEACHINGS)) {
+            return PseudocoreConfig.paymentCurve("experienceds_teachings");
         }
         if (ModEnchantments.has(registries, core, ModEnchantments.WARRIORS_AURA)) {
             return PseudocoreConfig.paymentCurve("warriors_aura");
@@ -165,33 +162,29 @@ public final class PseudocoreCosts {
 
     /**
      * The payment enchantment's resource, or null for the native split: a
-     * {@code pay_with_*} switch picks its core pair outright, and the pool
+     * payment switch picks its core pair outright, and the pool
      * pair picks {@code tensura:aura}/{@code tensura:magicule} - but only
      * while those consumers are registered (core's pairing rule), falling
      * back to the native pool write exactly as before. Every core query
      * sits behind {@link AbilityCoreBridge#seamUsable()}, so an absent or
      * old Ability Core is never asked a question it cannot answer; without
-     * core the pay_with_* enchantments do not ship at all (JSON conditions).
+     * core the payment switches do not ship at all (JSON conditions).
      */
     static String routedResource(HolderLookup.Provider registries, ItemStack core) {
         if (!AbilityCoreBridge.seamUsable()) {
             return null;
         }
-        if (ModEnchantments.has(registries, core, ModEnchantments.PAY_WITH_HEALTH)
+        if (ModEnchantments.has(registries, core, ModEnchantments.PRANAS_BREATH)
                 && pair(BuiltinResources.HEALTH)) {
             return BuiltinResources.HEALTH;
         }
-        if (ModEnchantments.has(registries, core, ModEnchantments.PAY_WITH_HUNGER)
+        if (ModEnchantments.has(registries, core, ModEnchantments.GOURMETS_HUNGER)
                 && pair(BuiltinResources.HUNGER)) {
             return BuiltinResources.HUNGER;
         }
-        if (ModEnchantments.has(registries, core, ModEnchantments.PAY_WITH_EXPERIENCE_POINTS)
+        if (ModEnchantments.has(registries, core, ModEnchantments.EXPERIENCEDS_TEACHINGS)
                 && pair(BuiltinResources.EXPERIENCE_POINTS)) {
             return BuiltinResources.EXPERIENCE_POINTS;
-        }
-        if (ModEnchantments.has(registries, core, ModEnchantments.PAY_WITH_EXPERIENCE_LEVELS)
-                && pair(BuiltinResources.EXPERIENCE_LEVELS)) {
-            return BuiltinResources.EXPERIENCE_LEVELS;
         }
         if (!TensuraBridge.isLoaded()) {
             return null;
@@ -216,7 +209,7 @@ public final class PseudocoreCosts {
      * The routed charge: validate through the pair's provider, charge through
      * its consumer - core's validate-then-charge, so a short pool refuses the
      * verb with nothing consumed, exactly like the native paths' messages.
-     * The pool pair keeps its MP/AP keys; the four core wallets speak one
+     * The pool pair keeps its MP/AP keys; the core wallets speak one
      * prettified line (foreign pairs included, forward-compatible).
      */
     private static Optional<Component> chargeRouted(ServerPlayer player, LivingEntity mob,
@@ -250,7 +243,7 @@ public final class PseudocoreCosts {
     }
 
     /**
-     * The routed amount for the four core wallets over the shaped mob
+     * The routed amount for the core wallets over the shaped mob
      * scale (the wallet's curve applied by the caller - linear keeps it
      * the raw max health): health and hunger take the scale itself,
      * levels one per five points of it, and experience points the XP
@@ -339,7 +332,7 @@ public final class PseudocoreCosts {
             if (BuiltinResources.EXPERIENCE_LEVELS.equals(routed)) {
                 return Component.translatable("pseudocore.tooltip.payment.levels");
             }
-            // Points: the fourth wallet, the only one routedResource can
+            // Points: the last wallet, the only one routedResource can
             // still be holding at this point.
             return Component.translatable("pseudocore.tooltip.payment.xp");
         }
@@ -457,7 +450,7 @@ public final class PseudocoreCosts {
      * owner, which is the only correct answer for a foreign pair), and
      * only when core answers false (no consumer, not refundable, threw)
      * through the local mirrors - the pool pair writes the same Tensura
-     * pools its consumer writes, the four core wallets mirror core's
+     * pools its consumer writes, the core wallets mirror core's
      * own arithmetic for a pre-refund-API core. The pre-charge provider
      * check guarantees no floor was hit, so the mirrors are exact.
      */

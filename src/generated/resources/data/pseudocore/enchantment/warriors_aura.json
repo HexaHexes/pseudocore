@@ -4,6 +4,7 @@
     "translate": "enchantment.pseudocore.warriors_aura"
   },
   "effects": {},
+  "exclusive_set": "#pseudocore:exclusive_set/payment",
   "max_cost": {
     "base": 15,
     "per_level_above_first": 15
