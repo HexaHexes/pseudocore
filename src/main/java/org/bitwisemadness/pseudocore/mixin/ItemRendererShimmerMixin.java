@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.world.item.ItemStack;
@@ -52,14 +53,44 @@ public abstract class ItemRendererShimmerMixin {
     private void pseudocore$mobShimmer(ItemRenderer self, BakedModel model, ItemStack stack,
                                        int combinedLight, int combinedOverlay,
                                        PoseStack poseStack, VertexConsumer buffer,
-                                       @Local(argsOnly = true) MultiBufferSource bufferSource) {
+                                       @Local(argsOnly = true) MultiBufferSource bufferSource,
+                                       @Local(argsOnly = true) BakedModel originalModel,
+                                       @Local RenderType baseType) {
         // Receiver as parameter 0: instance @Redirect validates `this` in the
         // signature even post-merge - omitting it fails apply (#168, alpha.1).
         self.renderModelLists(model, stack, combinedLight, combinedOverlay, poseStack, buffer);
         var shimmer = MobGlint.typeFor(stack);
-        if (shimmer != null) {
-            self.renderModelLists(model, stack, combinedLight, combinedOverlay, poseStack,
-                    bufferSource.getBuffer(shimmer));
+        if (shimmer == null) {
+            return;
         }
+        // The forced base flush is the PLAIN source's fix (#171): a foreign
+        // source - ImmediatelyFast's HUD batcher - owns its own ordering, and
+        // flushing it mid-item breaks its batch (the white selected slot).
+        if (bufferSource.getClass() == MultiBufferSource.BufferSource.class) {
+            ((MultiBufferSource.BufferSource) bufferSource).endBatch(baseType);
+        }
+        var shimmerBuffer = bufferSource.getBuffer(shimmer);
+        // Flerovium's fast path rewrites the call's model argument to its
+        // empty DummyModel after drawing the base itself; render's own
+        // parameter local is untouched, so fall back to it for the re-emit.
+        BakedModel shimmerModel = model;
+        if (model.getQuads(null, null, net.minecraft.util.RandomSource.create(42L)).isEmpty()
+                && pseudocore$directionalQuads(model) == 0) {
+            shimmerModel = originalModel;
+        }
+        self.renderModelLists(shimmerModel, stack, combinedLight, combinedOverlay, poseStack,
+                shimmerBuffer);
+    }
+
+    // Both quad lists must be empty: item/generated art sits in the null
+    // list while per-face geometry sits in the directional ones, so either
+    // alone would miss a model that draws nothing at all.
+    private static int pseudocore$directionalQuads(BakedModel model) {
+        int total = 0;
+        for (var direction : net.minecraft.core.Direction.values()) {
+            total += model.getQuads(null, direction, net.minecraft.util.RandomSource.create(42L))
+                    .size();
+        }
+        return total;
     }
 }

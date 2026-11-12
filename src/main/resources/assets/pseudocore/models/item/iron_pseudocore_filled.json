@@ -1,10 +1,36 @@
 {
-  "parent": "minecraft:item/generated",
+  "parent": "pseudocore:core_flat",
   "textures": {
     "layer0": "pseudocore:item/pseudocore_orbs",
     "layer1": "pseudocore:item/pseudocore_body",
     "particle": "pseudocore:item/pseudocore_body"
   },
+  "elements": [
+    {
+      "from": [0, 0, 7.7],
+      "to": [16, 16, 8.3],
+      "faces": {
+        "north": {"uv": [0, 0, 16, 16], "texture": "#layer0", "tintindex": 0},
+        "south": {"uv": [0, 0, 16, 16], "texture": "#layer0", "tintindex": 0},
+        "east": {"uv": [0, 0, 1, 16], "texture": "#layer0", "tintindex": 0},
+        "west": {"uv": [0, 0, 1, 16], "texture": "#layer0", "tintindex": 0},
+        "up": {"uv": [0, 0, 16, 1], "texture": "#layer0", "tintindex": 0},
+        "down": {"uv": [0, 0, 16, 1], "texture": "#layer0", "tintindex": 0}
+      }
+    },
+    {
+      "from": [0, 0, 7.5],
+      "to": [16, 16, 8.5],
+      "faces": {
+        "north": {"uv": [0, 0, 16, 16], "texture": "#layer1", "tintindex": 1},
+        "south": {"uv": [0, 0, 16, 16], "texture": "#layer1", "tintindex": 1},
+        "east": {"uv": [0, 0, 1, 16], "texture": "#layer1", "tintindex": 1},
+        "west": {"uv": [0, 0, 1, 16], "texture": "#layer1", "tintindex": 1},
+        "up": {"uv": [0, 0, 16, 1], "texture": "#layer1", "tintindex": 1},
+        "down": {"uv": [0, 0, 16, 1], "texture": "#layer1", "tintindex": 1}
+      }
+    }
+  ],
   "display": {
     "thirdperson_righthand": {
       "rotation": [80, -260, -40],
