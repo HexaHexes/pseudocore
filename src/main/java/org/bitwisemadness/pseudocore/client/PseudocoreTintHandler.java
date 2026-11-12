@@ -62,7 +62,7 @@ public final class PseudocoreTintHandler {
      * keep their curated values - they were not part of the mismatch - and
      * iron stays opaque white, which is the deliberate baseline that renders
      * the body art exactly as drawn. The dragonsteel line (#112) was sampled
-     * the same way from IaF's dragonsteel ingots.</p>
+     * the same way from IaF's ingots, with fire and lightning hand-tuned.</p>
      */
     private static final Map<String, Integer> BODY_COLORS = Map.ofEntries(
             Map.entry("copper_pseudocore", 0xFFE88C5A),
@@ -82,11 +82,11 @@ public final class PseudocoreTintHandler {
             Map.entry("gold_dragon_pseudocore", 0xFFF6D75C),
             Map.entry("netherite_dragon_pseudocore", 0xFF6A5F63),
             // The dragonsteel line (#112), sampled from IaF's own
-            // <element>_dragonsteel_ingot.png with the #71 rule (mean of the
-            // opaque, hue-carrying pixels between luminance 40 and 235).
-            Map.entry("fire_dragonsteel_pseudocore", 0xFFBA7263),
+            // <element>_dragonsteel_ingot.png with the #71 rule; fire and
+            // lightning are hand-tuned from the sample for a stronger hue.
+            Map.entry("fire_dragonsteel_pseudocore", 0xFFE06050),
             Map.entry("ice_dragonsteel_pseudocore", 0xFF5D8C9E),
-            Map.entry("lightning_dragonsteel_pseudocore", 0xFFEBB9DB));
+            Map.entry("lightning_dragonsteel_pseudocore", 0xFFD8A8F0));
 
     /** Opaque body tint for a tier; anything unmapped stays white (untouched). */
     private static int bodyColor(ItemStack stack) {
