@@ -69,5 +69,8 @@
   "pseudocore.message.insufficient_mp": "You need %s MP to capture this creature.",
   "pseudocore.message.insufficient_ap": "You need %s AP to capture this creature.",
   "pseudocore.message.insufficient_xp": "You need %s XP to capture this creature.",
-  "pseudocore.message.insufficient_resource": "You need %s %s to capture this creature."
+  "pseudocore.message.insufficient_resource": "You need %s %s to capture this creature.",
+  "toolspecialization.fire": "Fire",
+  "toolspecialization.ice": "Ice",
+  "toolspecialization.lightning": "Lightning"
 }
