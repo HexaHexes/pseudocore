@@ -58,6 +58,15 @@ public final class ModEnchantments {
             ResourceLocation.fromNamespaceAndPath(Pseudocore.MOD_ID, "pseudocore_cores"));
 
     /**
+     * The beast line's cores, Hunter's Boon's {@code supported_items}: a
+     * dragon core's wild-dragon gate is IaF's ownership guard, which
+     * answers whatever the core carries (the dragon gametest pins it), so
+     * the enchantment would be a no-op there and is refused at the anvil.
+     */
+    public static final TagKey<Item> BEAST_CORES = TagKey.create(Registries.ITEM,
+            ResourceLocation.fromNamespaceAndPath(Pseudocore.MOD_ID, "beast_cores"));
+
+    /**
      * All eight keys, in description-guard order. The three payment switches
      * exist only while Ability Core is loaded (their JSON carries
      * {@code neoforge:conditions}); the other five always ship.

@@ -15,8 +15,10 @@ import org.bitwisemadness.pseudocore.Pseudocore;
  * The eight enchantments of the #159 family, as datapack registry data
  * (1.21 enchantments live in {@code data/<ns>/enchantment/*.json}).
  *
- * <p>All eight are treasure-only: {@code supported_items} is the cores tag,
- * they carry {@code weight}/costs sane for the table but never enter it
+ * <p>All eight are treasure-only: {@code supported_items} is the cores tag
+ * - except {@code hunters_boon}, which names the beast-only tag because a
+ * dragon core's wild-dragon gate is IaF's ownership guard, not the
+ * enchantment's - they carry {@code weight}/costs sane for the table but never enter it
  * ({@code minecraft:in_enchanting_table} never lists them), and
  * {@code effects} is empty on purpose - every behaviour is implemented in
  * code by the consumers of {@code ModEnchantments.levelOf}, because the
@@ -72,7 +74,11 @@ public final class PseudocoreEnchantmentProvider implements DataProvider {
             description.addProperty("translate", "enchantment." + Pseudocore.MOD_ID + "." + id);
             enchantment.add("description", description);
 
-            enchantment.addProperty("supported_items", "#" + Pseudocore.MOD_ID + ":pseudocore_cores");
+            // Hunter's Boon gates wild capture on the beast line only: a
+            // dragon core's wild-dragon gate is IaF's ownership guard,
+            // which answers whatever the core carries - a no-op there.
+            enchantment.addProperty("supported_items", "#" + Pseudocore.MOD_ID
+                    + (id.equals("hunters_boon") ? ":beast_cores" : ":pseudocore_cores"));
             enchantment.addProperty("weight", id.equals("core_efficiency") ? 2 : 1);
             enchantment.addProperty("max_level",
                     id.equals("core_efficiency") ? CORE_EFFICIENCY_LEVELS : 1);

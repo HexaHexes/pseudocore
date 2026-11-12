@@ -12,6 +12,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 import org.bitwisemadness.pseudocore.Pseudocore;
+import org.bitwisemadness.pseudocore.item.PseudocoreItem;
 import org.bitwisemadness.pseudocore.registry.ModEnchantments;
 import org.bitwisemadness.pseudocore.registry.ModItems;
 
@@ -55,6 +56,15 @@ public final class PseudocoreItemTagsProvider extends ItemTagsProvider {
         var cores = tag(ModEnchantments.CORES);
         for (Item core : ModItems.all()) {
             cores.add(core);
+        }
+        // Hunter's Boon's set: the beast line only. On a dragon core it
+        // would do nothing - IaF's horn refuses an unowned dragon whatever
+        // the core carries (DragonLineGameTests pins it).
+        var beastCores = tag(ModEnchantments.BEAST_CORES);
+        for (Item core : ModItems.all()) {
+            if (core instanceof PseudocoreItem) {
+                beastCores.add(core);
+            }
         }
     }
 }

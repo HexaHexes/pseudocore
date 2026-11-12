@@ -16,6 +16,6 @@
   "slots": [
     "any"
   ],
-  "supported_items": "#pseudocore:pseudocore_cores",
+  "supported_items": "#pseudocore:beast_cores",
   "weight": 1
 }
