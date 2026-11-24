@@ -8,4 +8,6 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
+// Keep in sync with mod_id in gradle.properties. archivesName in build.gradle
+// extends mod_id with the loader line; rootProject.name stays the plain mod id.
 rootProject.name = 'pseudocore'

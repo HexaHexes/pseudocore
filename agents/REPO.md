@@ -6,8 +6,8 @@ and pulled in verbatim - **never hand-edit it.** Everything in this file is this
 repo's own and is edited freely; keep it aligned with the org rules rather than
 restating them.
 
-**Repo:** `HexaHexes/pseudocore` · **Mod ID:** `pseudocore` · **Branch:** `main`
-**Platform:** Minecraft 1.21.1 / NeoForge 21.1.259 / JDK 21 · **Gradle:** 9.2.1 (wrapper committed)
+**Repo:** `HexaHexes/pseudocore` · **Mod ID:** `pseudocore` · **Branch:** `neoforge-1.21.1` (the loader line; this is the default branch - no `main`)
+**Platform:** Minecraft 1.21.1 / NeoForge 21.1.259 / JDK 21 · **Jar:** `build/libs/pseudocore-neoforge-1.21.1-<version>.jar` · **Gradle:** 9.2.1 (wrapper committed)
 **Jar:** `build/libs/pseudocore-<version>.jar`
 
 Adds a single item - the **Pseudocore** - that captures any mob with all of its NBT,
